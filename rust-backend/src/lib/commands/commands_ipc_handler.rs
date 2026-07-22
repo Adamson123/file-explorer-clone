@@ -3,12 +3,11 @@ use std::sync::Arc;
 use serde_json::{json, Value};
 use tao::event_loop::EventLoopProxy;
 use tokio::sync::Mutex;
-use wry::http::Request;
 
 use crate::{
     globals::Globals,
     user_events::{UserEvent, WebviewEvent},
-    utils::get_field_as_string,
+    utils::{construct_js_event, get_field_as_string},
 };
 
 pub async fn send_ipc_response(
@@ -27,34 +26,18 @@ pub async fn send_ipc_response(
         "id":request_id
     });
 
-    let js = format!(
-        r#"
-        document.dispatchEvent(
-    new CustomEvent("ipc-response", {{
-        detail: {},
-    }}),
-  );
-        "#,
-        json_response
-    );
+    let js_event = construct_js_event("ipc-response", &json_response);
 
     let _ = proxy.lock().await.send_event(UserEvent::WebviewEvent(
         window_key.into(),
-        WebviewEvent::EvaluateScript(js),
+        WebviewEvent::EvaluateScript(js_event),
     ));
 }
 
-pub async fn handle_ipc_msg(window_key: &str, msg: &Request<String>, globals: Arc<Globals>) {
-    let def = json!({});
-    let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
+pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {
+    // let def = json!({});
+    // let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
 
-    // let args = body.get("args").unwrap_or(&def);
-    // let args = args
-    //     .clone()
-    //     .as_object_mut()
-    //     .unwrap_or(&mut serde_json::Map::new())
-    //     .insert("window_key".into(), json!(window_key))
-    //     .unwrap_or(def.clone());
     // 1. Get the existing "args" as a Map (clone it), or create a new empty Map
     let mut args_map = body
         .get("args")
@@ -75,9 +58,9 @@ pub async fn handle_ipc_msg(window_key: &str, msg: &Request<String>, globals: Ar
     // println!("args: {}, cmd: {}, id: {}", args, cmd, id);
 
     let command = {
-        let commands_reg = globals.commands_reg.lock().await;
+        let commands_register = globals.commands_register.lock().await;
 
-        commands_reg.invoke_command(&cmd, &args, globals.clone())
+        commands_register.invoke_command(&cmd, &args, globals.clone())
     }; // 🔓 lock released here
 
     let res = match command {

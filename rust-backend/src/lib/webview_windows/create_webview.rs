@@ -24,7 +24,7 @@ pub fn create_webview(
         .with_url(url)
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();
-            let window_key_for_closure = window_key.clone();
+            let window_key = window_key.clone();
             //globals_clone for with_ipc_handler, and it's moved away by tokio task ❌
             // let globals_clone = Arc::clone(&globals_clone_1);
             //globals_clone for tokio task, globals_clone_1 belongs to with_ipc_handler ✔
@@ -33,9 +33,7 @@ pub fn create_webview(
             //Tokio spawn because ipc_handler does not accept async function
             tokio::task::spawn(async move {
                 let event_loop_proxy = globals_clone.event_loop_proxy.lock().await;
-
-                let _ = event_loop_proxy
-                    .send_event(UserEvent::IPCMessage(window_key_for_closure, msg_clone));
+                let _ = event_loop_proxy.send_event(UserEvent::IPCMessage(window_key, msg_clone));
             });
 
             ipc_handler_closure(msg);

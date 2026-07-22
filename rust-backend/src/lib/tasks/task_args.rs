@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
     globals::Globals,
     user_events::{UserEvent, WebviewEvent},
+    utils::construct_js_event,
 };
 
 #[derive(Clone)]
@@ -25,6 +26,7 @@ pub struct TaskArgs {
     pub listener_buffer: Option<Value>,
     pub manager_buffer: Option<Value>,
     pub event_name: String,
+    pub window_key: String,
     pub globals: Arc<Globals>,
 }
 
@@ -83,20 +85,23 @@ impl TaskArgs {
         }
 
         self.manager_buffer = msg.clone();
-
         msg
     }
 
     pub async fn send_msg(&self, msg: &Value) {
         let msg = msg.clone();
-        let _ = self
-            .globals
-            .event_loop_proxy
-            .lock()
-            .await
-            .send_event(UserEvent::WebviewEvent(
-                "*".into(),
-                WebviewEvent::EvaluateScript(msg.to_string()),
-            ));
+        let js_event = construct_js_event(&self.event_name, &msg);
+
+        // println!("{js_event}");
+
+        let _ =
+            self.globals
+                .tasks_event_loop_proxy
+                .lock()
+                .await
+                .send_event(UserEvent::WebviewEvent(
+                    self.window_key.clone(),
+                    WebviewEvent::EvaluateScript(js_event),
+                ));
     }
 }

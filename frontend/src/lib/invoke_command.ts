@@ -18,6 +18,7 @@ const invoke_command = async <T = any>(
                 cmd,
                 args,
                 id,
+                type: "command",
             }),
         );
     });

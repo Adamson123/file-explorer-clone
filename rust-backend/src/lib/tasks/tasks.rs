@@ -1,11 +1,13 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serde_json::json;
-use tokio::task::yield_now;
+use tokio::{task::yield_now, time::sleep};
 
 use crate::{
+    commands::get_dir_c,
     task_args::TaskArgs,
     tasks_manager::{Task, TaskBoxFuture},
+    utils::get_field_as_string,
 };
 
 // macro_rules! repeat {
@@ -19,11 +21,13 @@ use crate::{
 macro_rules! repeat {
     (
         $count:expr,
-        $args:expr,
+        $delay:expr,
         |$var:ident| $body:block
     ) => {
         for $var in 0..$count {
             $body
+
+            //   sleep(Duration::from_secs($delay)).await;
         }
     };
 }
@@ -53,18 +57,35 @@ macro_rules! task {
 
 task!(monitor_dir, |a| {
     println!("Started Monitor");
-    let def = json!({});
 
-    repeat!(1000000, a, |i| {
+    let def = json!({});
+    let mut cache = json!({});
+
+    repeat!(100, 4, |i| {
         let x = a.recv_listener_msg().unwrap_or(def.clone());
+
         if x.as_object().unwrap().len() > 0 {
             println!("Recieved: {x}");
             println!("Iteration: {i}");
-        }
-        a.send_msg(&x).await;
+            a.send_msg(&json!({"your_msg":x,"rust_msg":"back from rust"}))
+                .await;
 
-        yield_now().await;
-        //  println!("Args: {:?}", a);
+            let path = get_field_as_string(&x.get("data").unwrap_or(&x), "path");
+            if !path.is_empty() {
+                println!("cached");
+                cache = x.clone();
+            }
+        }
+
+        if cache.as_object().unwrap().len() > 0 {
+            let dir_c = get_dir_c(&cache.get("data").unwrap_or(&x), a.globals.clone())
+                .await
+                .unwrap_or(String::new());
+            // println!("😂😂😂{dir_c}");
+            a.send_msg(&json!(dir_c)).await;
+        }
+
+        sleep(Duration::from_secs(4)).await;
     });
 
     println!("Monitor done");

@@ -1,9 +1,9 @@
-use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
+use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc, time::Duration};
 
 use serde_json::{json, Value};
-use tokio::sync::{
-    mpsc::Sender,
-    mpsc::{channel, Receiver},
+use tokio::{
+    sync::mpsc::{channel, Receiver, Sender},
+    time::sleep,
 };
 use uuid::Uuid;
 
@@ -33,7 +33,7 @@ pub struct TaskManager {
     //  pub active_tasks: HashMap<String, i32>,
     /* task id, sender */
     pub task_channels: HashMap<String, Sender<TaskMsg>>,
-    pub globals: Arc<Globals>,
+    // pub globals: Arc<Globals>,
 }
 
 impl TaskManager {
@@ -44,9 +44,16 @@ impl TaskManager {
     pub fn start_task(
         &mut self,
         task_name: &str,
-        start_msg: Option<&Value>,
+        window_key: &str,
+        start_msg: &Option<Value>,
+        globals: Arc<Globals>,
     ) -> Result<String, String> {
-        let start_msg = start_msg.cloned();
+        let mut start_msg = start_msg.clone();
+        if start_msg.is_some() {
+            let data = get_field_as_string(&start_msg.clone().unwrap(), "data");
+            start_msg = Some(json!({"data":data}));
+        }
+
         //Find task
         let task = self.tasks.get(task_name);
         if task.is_none() {
@@ -59,15 +66,16 @@ impl TaskManager {
         //Setup communication channel
         let (tx, rx): (Sender<TaskMsg>, Receiver<TaskMsg>) = channel(32);
 
-        let globals = self.globals.clone();
+        //let globals = globals.clone();
 
         //Task recieve end
         let task_args = TaskArgs {
             listener_buffer: start_msg,
             manager_buffer: None,
             reciever: rx,
-            globals: globals.clone(),
+            globals: globals,
             event_name: event_name.clone(),
+            window_key: window_key.to_string(),
         };
 
         //Task manager send end
@@ -76,6 +84,7 @@ impl TaskManager {
         //Start task
         let task = task.unwrap().clone();
         let _handle = tokio::task::spawn(async move {
+            sleep(Duration::from_secs_f64(2.6)).await;
             let exit_msg = task(task_args).await.unwrap_or("".into());
             println!("Exit msg {exit_msg}");
             //Broadcast
@@ -93,6 +102,8 @@ impl TaskManager {
         let channel = self.task_channels.get(event_name);
 
         let msg = msg.clone();
+        //  println!("Original data: {}", msg);
+
         let sender = if get_field_as_string(&msg, "sender") == "manager" {
             MsgSender::Manager
         } else {
@@ -101,9 +112,11 @@ impl TaskManager {
 
         if let Some(c) = channel {
             let fx = c.send(TaskMsg {
-                data: json!({"data":get_field_as_string(&msg,"data")}),
+                data: json!({"data":msg.get("data").unwrap_or(&json!({}))}),
                 sender,
             });
+
+            //println!("Get data: {}", get_field_as_string(&msg, "data"));
 
             let f = async move {
                 let _ = fx.await;

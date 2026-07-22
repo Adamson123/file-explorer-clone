@@ -29,3 +29,16 @@ pub fn get_field_as_bool(value: &Value, field: &str) -> bool {
 pub fn get_time(f: &SystemTime, t: &SystemTime) -> i64 {
     f.clone().duration_since(t.clone()).unwrap().as_millis() as i64
 }
+
+pub fn construct_js_event(event_name: &str, value: &Value) -> String {
+    format!(
+        r#"
+        document.dispatchEvent(
+    new CustomEvent("{}", {{
+        detail: {},
+    }}),
+  );
+        "#,
+        event_name, value
+    )
+}

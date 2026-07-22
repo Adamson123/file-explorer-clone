@@ -5,11 +5,14 @@ import heroImg from "./assets/hero.png";
 import "./index.css";
 import "./App.css";
 import invoke_command from "./lib/invoke_command";
+import useStartTask from "./hooks/useStartTask";
+//import start_task from "./lib/start_task";
 
 function App() {
     const [count, setCount] = useState(0);
     const minimize = useRef(true);
-    //  const mouseDown = useRef(false);
+    const [listener, start_task] = useStartTask("monitor_dir");
+    const [pathInput, setPathInput] = useState("");
 
     useEffect(() => {
         (async () => {
@@ -19,6 +22,17 @@ function App() {
                 name: "Data from frontend",
             });
             console.log({ res, name: res?.name });
+
+            await start_task("hello");
+
+            listener.listen((e) => {
+                console.log(e);
+            });
+
+            listener.send_msg({
+                msg: "from frontend",
+                path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
+            });
         })();
     }, []);
 
@@ -54,7 +68,7 @@ function App() {
     const create_window = async () => {
         const req = await invoke_command("create_window", {
             window_name: "Note.txt",
-            url: "http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
+            url: `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt", //"http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", ,
         });
         console.log(req);
     };
@@ -102,6 +116,24 @@ function App() {
                         <code>HMR</code>
                     </p>
                 </div>
+                <input
+                    onChange={(e) => setPathInput(e.target.value)}
+                    type="text"
+                    className="w-100 bg-red-500/40 p-2"
+                />
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => {
+                        listener.send_msg({
+                            msg: "from frontend again!!!",
+                            path: pathInput.replaceAll("\\", "\\\\"),
+                        });
+                    }}
+                >
+                    Send dir
+                </button>
+
                 <button
                     type="button"
                     className="counter"

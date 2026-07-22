@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serde_json::json;
 use tao::{
     event::{Event, WindowEvent},
     event_loop::{EventLoop, EventLoopWindowTarget},
@@ -8,8 +7,6 @@ use tao::{
 
 use crate::{
     globals::Globals,
-    tasks::monitor_dir,
-    tasks_manager::{self, TaskManager},
     user_events::UserEvent,
     user_events_handler::user_events_handler,
     webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager},
@@ -25,17 +22,6 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
     let _globals_clone = Arc::clone(&globals);
     let globals_clone_2 = Arc::clone(&globals);
 
-    let mut task_manager = TaskManager {
-        globals: globals.clone(),
-        task_channels: HashMap::new(),
-        tasks: HashMap::new(),
-    };
-
-    task_manager.register_task(monitor_dir());
-    let r = task_manager.start_task("monitor_dir", None);
-
-    let task_manager = Arc::new(task_manager);
-
     let mut webview_windows_manager = WebViewWindowManager {
         globals: globals.clone(),
         webview_windows: HashMap::new(),
@@ -49,28 +35,6 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
     };
 
     let main_window_key = webview_windows_manager.add_webview_window(&main_window_config);
-
-    tokio::task::spawn({
-        println!("Start sending from another thread...");
-        let r = r.clone();
-        let task_manager = task_manager.clone();
-        async move {
-            if r.is_ok() {
-                let r = r.clone().unwrap();
-                for i in 1..10000 {
-                    let r = task_manager.send_msg(
-                        &r,
-                        &json!({ "sender":"listener","data": format!("I sent {i} to {r}") }),
-                    );
-
-                    if r.is_some() {
-                        r.unwrap().await;
-                        //   println!("Senttttt");
-                    }
-                }
-            }
-        }
-    });
 
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {

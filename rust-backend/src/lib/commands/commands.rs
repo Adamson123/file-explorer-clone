@@ -42,7 +42,7 @@ command!(log, |a, _g| {
 
 command!(minimize_window, |a, g| {
     let _ = g
-        .event_loop_proxy
+        .commands_event_loop_proxy
         .lock()
         .await
         .send_event(UserEvent::WindowEvent(
@@ -54,7 +54,7 @@ command!(minimize_window, |a, g| {
 
 command!(move_window, |a, g| {
     let _ = g
-        .event_loop_proxy
+        .commands_event_loop_proxy
         .lock()
         .await
         .send_event(UserEvent::WindowEvent(
@@ -67,7 +67,7 @@ command!(move_window, |a, g| {
 command!(hide_decoration, |a, g| {
     let minimize = get_field_as_bool(&a, "minimize");
     let _ = g
-        .event_loop_proxy
+        .commands_event_loop_proxy
         .lock()
         .await
         .send_event(UserEvent::WindowEvent(
@@ -103,7 +103,7 @@ command_struct!(log_struct, |args, _g| {
     put_value_in_result(&json!({"name": name}))
 });
 
-command_struct!(get_dir_contents, |a, _g| {
+pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
     let path = get_field_as_string(&a, "path");
     let mut dir_contents = tokio::fs::read_dir(&path)
         .await
@@ -148,7 +148,9 @@ command_struct!(get_dir_contents, |a, _g| {
 
     let entries_json = serde_json::to_string(&entries).unwrap_or(String::new());
     Ok(entries_json)
-});
+}
+
+command_struct!(get_dir_contents, |a, g| { get_dir_c(a, g).await });
 
 command_struct!(create_window, |a, g| {
     let window_config = NewWindowConfig {

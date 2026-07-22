@@ -30,13 +30,13 @@ class IPCHandler {
         }
     }
 
-    static parseResponseFields(data: any) {
-        try {
-            return JSON.parse(data);
-        } catch (error) {
-            return data;
-        }
-    }
+    // static parseResponseFields(data: any) {
+    //     try {
+    //         return JSON.parse(data);
+    //     } catch (error) {
+    //         return data;
+    //     }
+    // }
 
     static listen() {
         document.addEventListener("ipc-response", (event: Event) => {

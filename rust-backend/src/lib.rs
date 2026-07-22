@@ -25,9 +25,6 @@ pub mod commands_registry;
 #[path = "./lib/commands/commands.rs"]
 pub mod commands;
 
-#[path = "./lib/tasks/tasks_prototype.rs"]
-pub mod tasks_prototype;
-
 #[path = "./lib/tasks/task_args.rs"]
 pub mod task_args;
 
@@ -37,8 +34,11 @@ pub mod tasks;
 #[path = "./lib/tasks/tasks_manager.rs"]
 pub mod tasks_manager;
 
-#[path = "./lib/ipc_handler.rs"]
-pub mod ipc_handler;
+#[path = "./lib/tasks/tasks_ipc_handler.rs"]
+pub mod tasks_ipc_handler;
+
+#[path = "./lib/commands/commands_ipc_handler.rs"]
+pub mod commands_ipc_handler;
 
 #[path = "./lib/utils.rs"]
 pub mod utils;
