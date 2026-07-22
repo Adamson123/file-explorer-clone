@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serde_json::{json, Value};
+use tokio::time::sleep;
 
 use crate::{
     globals::Globals,
@@ -36,6 +37,8 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 let response = json!({"id":id, "error": error, "data": event_name  });
                 let js_event = construct_js_event("ipc-response", &response);
 
+                // sleep(Duration::from_secs_f64(0.1)).await;
+                println!("Sending back response");
                 let _ = globals.tasks_event_loop_proxy.lock().await.send_event(
                     UserEvent::WebviewEvent(
                         window_key.to_string(),

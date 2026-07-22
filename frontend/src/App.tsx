@@ -19,18 +19,22 @@ function App() {
             console.log("ss");
 
             const res = await invoke_command<{ name: string }>("log_struct", {
-                name: "Data from frontend",
+                name: "Data from frontend invoke",
             });
             console.log({ res, name: res?.name });
 
             await start_task("hello");
 
-            listener.listen((e) => {
+            listener.on_message((e) => {
                 console.log(e);
             });
 
+            listener.on_exit((e) => {
+                console.log("Exit: " + e);
+            });
+
             listener.send_msg({
-                msg: "from frontend",
+                msg: "from frontend listener",
                 path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
             });
         })();
@@ -132,6 +136,44 @@ function App() {
                     }}
                 >
                     Send dir
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => {
+                        listener.pause();
+                    }}
+                >
+                    Pause
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => {
+                        listener.resume();
+                    }}
+                >
+                    Resume
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => {
+                        listener.cancel();
+                    }}
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => start_task("hello")}
+                >
+                    Start
                 </button>
 
                 <button

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import IPCHandler from "../lib/ipc_handler";
+import type { resume } from "react-dom/server";
 
 const parseResponse = (data: any) => {
     try {
@@ -33,20 +34,38 @@ function useStartTask(task_name: string) {
                 }),
             );
         });
-
         event_name_ref.current = e_name as string;
 
         return e_name;
     };
 
     const listener = {
-        listen: (callback: (d: any) => void) => {
-            document.addEventListener(
-                event_name_ref.current as string,
-                (event: any) => {
-                    callback(parseResponse(event.detail));
-                },
-            );
+        listeners: [] as (() => void)[],
+        on_message(callback: (d: any) => void) {
+            const fn = (event: any) => {
+                callback(parseResponse(event.detail));
+            };
+            document.addEventListener(event_name_ref.current as string, fn);
+
+            let f = () => {
+                document.removeEventListener(
+                    event_name_ref.current as string,
+                    fn,
+                );
+            };
+
+            this.listeners.push(f);
+            return f;
+        },
+
+        on_exit(callback: (d: any) => void) {
+            let event_name_exit = event_name_ref.current + "_exit";
+            const fn = (event: any) => {
+                callback(parseResponse(event.detail));
+
+                document.removeEventListener(event_name_exit as string, fn);
+            };
+            document.addEventListener(event_name_exit as string, fn);
         },
 
         send_msg: (args: any) => {
@@ -60,7 +79,47 @@ function useStartTask(task_name: string) {
             );
         },
 
-        unlisten: () => {},
+        pause: () => {
+            (window as any).ipc.postMessage(
+                JSON.stringify({
+                    event_name: event_name_ref.current,
+                    args: { sender: "manager", data: { state: "pause" } },
+                    msg_type: "task",
+                    action: "task_msg",
+                }),
+            );
+        },
+
+        resume: () => {
+            (window as any).ipc.postMessage(
+                JSON.stringify({
+                    event_name: event_name_ref.current,
+                    args: { sender: "manager", data: { state: "run" } },
+                    msg_type: "task",
+                    action: "task_msg",
+                }),
+            );
+        },
+
+        cancel() {
+            (window as any).ipc.postMessage(
+                JSON.stringify({
+                    event_name: event_name_ref.current,
+                    args: { sender: "manager", data: { state: "cancel" } },
+                    msg_type: "task",
+                    action: "task_msg",
+                }),
+            );
+
+            if (this.listeners.length) {
+                this.listeners.forEach((f) => {
+                    console.log("Removed all listeners...");
+                    f();
+                });
+            }
+
+            called_ref.current = false;
+        },
     };
 
     return [listener, start_task] as const;

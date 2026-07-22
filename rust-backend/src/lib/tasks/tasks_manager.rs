@@ -9,8 +9,9 @@ use uuid::Uuid;
 
 use crate::{
     globals::Globals,
-    task_args::{MsgSender, TaskArgs, TaskMsg},
-    utils::get_field_as_string,
+    task_args::{MsgSender, TaskArgs, TaskHandle, TaskMsg},
+    user_events::{UserEvent, WebviewEvent},
+    utils::{construct_js_event, get_field_as_string},
 };
 
 pub type TaskBoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send + Sync>>;
@@ -69,25 +70,46 @@ impl TaskManager {
         //let globals = globals.clone();
 
         //Task recieve end
+
         let task_args = TaskArgs {
-            listener_buffer: start_msg,
-            manager_buffer: None,
+            listener_buffer: vec![start_msg.unwrap_or(json!({}))], //start_msg.clone(),
+            manager_buffer: Vec::new(),
+
+            listener_last_read: None, //start_msg,
+            manager_last_read: None,
+
             reciever: rx,
-            globals: globals,
+            globals: globals.clone(),
             event_name: event_name.clone(),
             window_key: window_key.to_string(),
+            task_handle: TaskHandle::Run,
         };
 
         //Task manager send end
+        // let tx_clone = tx.clone();
         self.task_channels.insert(event_name.clone(), tx);
 
         //Start task
         let task = task.unwrap().clone();
-        let _handle = tokio::task::spawn(async move {
-            sleep(Duration::from_secs_f64(2.6)).await;
-            let exit_msg = task(task_args).await.unwrap_or("".into());
-            println!("Exit msg {exit_msg}");
-            //Broadcast
+        let _handle = tokio::task::spawn({
+            let window_key = window_key.to_string();
+            let globals = globals.clone();
+            let event_name = event_name.clone();
+
+            async move {
+                sleep(Duration::from_secs_f64(1.5)).await;
+                let exit_msg = task(task_args).await.unwrap_or("".into());
+
+                let js_event =
+                    construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
+
+                let _ = globals.tasks_event_loop_proxy.lock().await.send_event(
+                    UserEvent::WebviewEvent(
+                        window_key.to_string(),
+                        WebviewEvent::EvaluateScript(js_event),
+                    ),
+                );
+            }
         });
 
         println!("{event_name} started...");
@@ -102,7 +124,10 @@ impl TaskManager {
         let channel = self.task_channels.get(event_name);
 
         let msg = msg.clone();
-        //  println!("Original data: {}", msg);
+        // println!(
+        //     "Original data: {}",
+        //     msg.get("data").unwrap_or(&json!({})).clone()
+        // );
 
         let sender = if get_field_as_string(&msg, "sender") == "manager" {
             MsgSender::Manager
@@ -112,11 +137,14 @@ impl TaskManager {
 
         if let Some(c) = channel {
             let fx = c.send(TaskMsg {
-                data: json!({"data":msg.get("data").unwrap_or(&json!({}))}),
+                data: msg.get("data").unwrap_or(&json!({})).clone(),
                 sender,
             });
 
-            //println!("Get data: {}", get_field_as_string(&msg, "data"));
+            // println!(
+            //     "Original data again: {}",
+            //     msg.get("data").unwrap_or(&json!({})).clone()
+            // );
 
             let f = async move {
                 let _ = fx.await;

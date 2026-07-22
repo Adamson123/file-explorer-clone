@@ -5,7 +5,7 @@ use tokio::{task::yield_now, time::sleep};
 
 use crate::{
     commands::get_dir_c,
-    task_args::TaskArgs,
+    task_args::{TaskArgs, TaskHandle},
     tasks_manager::{Task, TaskBoxFuture},
     utils::get_field_as_string,
 };
@@ -21,13 +21,18 @@ use crate::{
 macro_rules! repeat {
     (
         $count:expr,
-        $delay:expr,
+        //$delay:expr,
         |$var:ident| $body:block
     ) => {
-        for $var in 0..$count {
-            $body
+        // for $var in 0..$count {
+        //     $body
 
-            //   sleep(Duration::from_secs($delay)).await;
+        //     //   sleep(Duration::from_secs($delay)).await;
+        // }
+        let mut $var = 0;
+        while $var < $count {
+             $body
+            $var += 1;
         }
     };
 }
@@ -59,29 +64,50 @@ task!(monitor_dir, |a| {
     println!("Started Monitor");
 
     let def = json!({});
-    let mut cache = json!({});
+    let mut current_path = json!({});
 
-    repeat!(100, 4, |i| {
+    repeat!(100, |i| {
+        match a.get_task_state() {
+            TaskHandle::Run => {}
+            TaskHandle::Pause => {
+                sleep(Duration::from_millis(1)).await;
+                continue;
+            }
+            TaskHandle::Cancel => break,
+        }
+
         let x = a.recv_listener_msg().unwrap_or(def.clone());
 
-        if x.as_object().unwrap().len() > 0 {
-            println!("Recieved: {x}");
-            println!("Iteration: {i}");
-            a.send_msg(&json!({"your_msg":x,"rust_msg":"back from rust"}))
-                .await;
+        // println!(
+        //     "Recieved: {}",
+        //     a.listener_buffer.clone().unwrap_or(def.clone())
+        // );
+        // if x.as_object().unwrap().len() > 0 {
+        //     println!("Recieved: {}", x);
+        //     a.send_msg(&x).await;
+        // }
 
-            let path = get_field_as_string(&x.get("data").unwrap_or(&x), "path");
+        // println!("Iteration: {i}");
+        // println!("{x}");
+
+        if x.as_object().unwrap().len() > 0 {
+            // println!("Recieved: {x}");
+            // println!("Iteration: {i}");
+            // a.send_msg(&json!({"your_msg":x,"rust_msg":"back from rust"}))
+            //     .await;
+
+            let path = get_field_as_string(&x, "path");
             if !path.is_empty() {
-                println!("cached");
-                cache = x.clone();
+                println!("current_path saved");
+                current_path = x.clone();
             }
         }
 
-        if cache.as_object().unwrap().len() > 0 {
-            let dir_c = get_dir_c(&cache.get("data").unwrap_or(&x), a.globals.clone())
+        if current_path.as_object().unwrap().len() > 0 {
+            let dir_c = get_dir_c(&current_path, a.globals.clone())
                 .await
                 .unwrap_or(String::new());
-            // println!("😂😂😂{dir_c}");
+            //  println!("😂😂😂{dir_c}");
             a.send_msg(&json!(dir_c)).await;
         }
 
@@ -90,5 +116,5 @@ task!(monitor_dir, |a| {
 
     println!("Monitor done");
 
-    Ok(String::from("Done ooooo"))
+    Ok(String::from(format!("{} is done...", a.event_name)))
 });
