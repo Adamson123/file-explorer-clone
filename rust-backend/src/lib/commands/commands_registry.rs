@@ -1,5 +1,5 @@
 use serde_json::Value;
-use std::{collections::HashMap, future::Future, pin::Pin};
+use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use crate::globals::Globals;
 //use wry::WebView;
@@ -11,21 +11,22 @@ use crate::globals::Globals;
 //pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>>>>;
 //pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>>>>;
 //Arc<Mutex<Globals>>
-//type FnType = dyn for<'a> Fn(&'a Value, &'a Globals) -> BoxFuture<'a> ;
+//type CommandFnType = dyn for<'a> Fn(&'a Value, &'a Globals) -> BoxFuture<'a> ;
 pub type BoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send + Sync>>;
-pub type FnType = Box<dyn for<'a> Fn(&'a Value, &'a Globals) -> BoxFuture<'a> + Send + Sync>;
+pub type CommandFnType =
+    Arc<Box<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> BoxFuture<'a> + Send + Sync>>;
 
 pub struct Command {
     pub name: String,
-    pub function: FnType,
+    pub function: CommandFnType,
 }
 
 pub struct CommandsRegistry {
-    pub commands: HashMap<String, FnType>,
+    pub commands: HashMap<String, CommandFnType>,
 }
 
 impl CommandsRegistry {
-    pub fn register(&mut self, name: &str, function: FnType) {
+    pub fn register(&mut self, name: &str, function: CommandFnType) {
         self.commands.insert(name.to_string(), function);
     }
 
@@ -33,22 +34,20 @@ impl CommandsRegistry {
         self.commands.insert(command.name, command.function);
     }
 
-    pub async fn invoke_command(
+    pub fn invoke_command<'a>(
         &self,
         name: &str,
-        args: &Value,
-        globals: &Globals,
-    ) -> Result<String, String> {
-        let res = self.commands.get(name);
-        if let Some(f) = res {
-            let r = f(args, globals).await;
-            return r;
-            // tokio::spawn(f(args, globals));
-            // Ok(String::new())
-        } else {
-            let msg = format!("Command {} not found", name);
-            println!("{}", msg);
-            return Err(msg);
+        args: &'a Value,
+        globals: Arc<Globals>,
+    ) -> Result<BoxFuture<'a>, String> {
+        let f = self.get_command(name);
+        match f {
+            Some(f) => Ok(f(args, globals)),
+            None => Err(format!("Command {} not found", name)),
         }
+    }
+
+    pub fn get_command(&self, name: &str) -> Option<CommandFnType> {
+        self.commands.get(name).cloned()
     }
 }

@@ -8,6 +8,7 @@ import invoke_command from "./lib/invoke_command";
 
 function App() {
     const [count, setCount] = useState(0);
+    const minimize = useRef(true);
     //  const mouseDown = useRef(false);
 
     useEffect(() => {
@@ -21,8 +22,13 @@ function App() {
         })();
     }, []);
 
-    const minimize_window = () => {
-        invoke_command("minimize_window");
+    const minimize_window = async () => {
+        //  invoke_command("minimize_window");
+
+        const res = await invoke_command<{ name: string }>("log_struct", {
+            name: "Data from frontend",
+        });
+        console.log({ res, name: res?.name });
     };
 
     const move_window = async () => {
@@ -34,7 +40,28 @@ function App() {
     };
 
     const toggle_decor = () => {
-        invoke_command("hide_decoration");
+        invoke_command("hide_decoration", { minimize: minimize.current });
+        minimize.current = !minimize.current;
+    };
+
+    const get_dir_contents = async () => {
+        const req = await invoke_command("get_dir_contents", {
+            path: "C:\\Users\\Admin\\dev\\file-explorer-clone\\frontend",
+        });
+        console.log(req);
+    };
+
+    const create_window = async () => {
+        const req = await invoke_command("create_window", {
+            window_name: "Note.txt",
+            url: "http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
+        });
+        console.log(req);
+    };
+
+    const monitor_dir = async () => {
+        const req = await invoke_command("monitor_dir");
+        console.log(req);
     };
 
     return (
@@ -89,6 +116,26 @@ function App() {
                     onClick={toggle_decor}
                 >
                     toggle_decor
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={get_dir_contents}
+                >
+                    get_dir_contents
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={create_window}
+                >
+                    create_window
+                </button>
+
+                <button type="button" className="counter" onClick={monitor_dir}>
+                    monitor_dir
                 </button>
             </section>
 

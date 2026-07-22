@@ -11,51 +11,85 @@ use crate::{
     utils::get_field_as_string,
 };
 
-pub fn send_ipc_response(proxy: &EventLoopProxy<UserEvent>, id: &str, res: Result<String, String>) {
+pub async fn send_ipc_response(
+    proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
+    request_id: &str,
+    window_key: &str,
+    res: Result<String, String>,
+) {
     let def = String::from(r#""#);
     let data = res.as_ref().unwrap_or(&def);
     let error = res.as_ref().err().unwrap_or(&def);
+
+    let json_response = serde_json::json!({
+        "data":data,
+        "error":error,
+        "id":request_id
+    });
 
     let js = format!(
         r#"
         document.dispatchEvent(
     new CustomEvent("ipc-response", {{
-        detail: {{
-         data:`{}`,
-         error:`{}`,
-         id:"{}"
-      }},
-
+        detail: {},
     }}),
   );
         "#,
-        data, error, id
+        json_response
     );
 
-    //println!("{}", js);
-    //let _ = webview.evaluate_script(&js);
-    // let _ = webview.evaluate_script(&js);
-    let _ = proxy.send_event(UserEvent::WebviewEvent(WebviewEvent::EvaluateScript(js)));
+    let _ = proxy.lock().await.send_event(UserEvent::WebviewEvent(
+        window_key.into(),
+        WebviewEvent::EvaluateScript(js),
+    ));
 }
 
-pub async fn handle_ipc_msg(
-    msg: &Request<String>,
-    //   commands_reg: &CommandsRegistry,
-    globals: Arc<Mutex<Globals>>,
-) {
+pub async fn handle_ipc_msg(window_key: &str, msg: &Request<String>, globals: Arc<Globals>) {
     let def = json!({});
-    let body: Value = serde_json::from_str(msg.body()).unwrap_or((&def).to_owned());
+    let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
 
-    let args = body.get("args").unwrap_or(&def);
+    // let args = body.get("args").unwrap_or(&def);
+    // let args = args
+    //     .clone()
+    //     .as_object_mut()
+    //     .unwrap_or(&mut serde_json::Map::new())
+    //     .insert("window_key".into(), json!(window_key))
+    //     .unwrap_or(def.clone());
+    // 1. Get the existing "args" as a Map (clone it), or create a new empty Map
+    let mut args_map = body
+        .get("args")
+        .and_then(|v| v.as_object()) // gets &Map
+        .cloned() // clones it into a new owned Map
+        .unwrap_or_else(|| serde_json::Map::new()); // fallback to empty Map
+
+    // 2. Insert the new key into the Map
+    args_map.insert("window_key".to_string(), json!(window_key));
+
+    // 3. Convert the Map into a Value (Object variant)
+    let args: Value = Value::Object(args_map);
+
     let cmd = get_field_as_string(&body, "cmd");
-    let id = get_field_as_string(&body, "id");
+    let request_id: String = get_field_as_string(&body, "id");
 
     // println!("Body: {}", body);
     // println!("args: {}, cmd: {}, id: {}", args, cmd, id);
 
-    let globals = globals.lock().await;
-    let commands_reg = &globals.commands_reg;
-    let res = commands_reg.invoke_command(&cmd, args, &globals).await;
+    let command = {
+        let commands_reg = globals.commands_reg.lock().await;
 
-    send_ipc_response(&globals.event_loop_proxy, &id, res);
+        commands_reg.invoke_command(&cmd, &args, globals.clone())
+    }; // 🔓 lock released here
+
+    let res = match command {
+        Ok(f) => f.await,
+        Err(e) => Err(e),
+    };
+
+    send_ipc_response(
+        globals.event_loop_proxy.clone(),
+        &request_id,
+        window_key,
+        res,
+    )
+    .await;
 }

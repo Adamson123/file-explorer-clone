@@ -20,6 +20,18 @@ class IPCHandler {
 
     static parseResponse(data: any) {
         try {
+            // let d = JSON.parse(data);
+            // console.log({ dddd: d });
+            // return d;
+            return JSON.parse(data);
+        } catch (error) {
+            //   console.log("Not parsable");
+            return data;
+        }
+    }
+
+    static parseResponseFields(data: any) {
+        try {
             return JSON.parse(data);
         } catch (error) {
             return data;
@@ -29,6 +41,7 @@ class IPCHandler {
     static listen() {
         document.addEventListener("ipc-response", (event: Event) => {
             const customEvent = event as CustomEvent;
+            // console.log(customEvent.detail);
             const { id, data, error } = customEvent.detail;
             const executor = IPCHandler.executors.get(id);
 

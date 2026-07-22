@@ -1,17 +1,41 @@
 #[path = "./lib/globals.rs"]
 pub mod globals;
 
-#[path = "./lib/webview_init.rs"]
-pub mod webview_init;
+#[path = "./lib/start_app.rs"]
+pub mod start_app;
 
-#[path = "./lib/user_events.rs"]
+#[path = "./lib/webview_windows/create_window.rs"]
+pub mod create_window;
+
+#[path = "./lib/webview_windows/create_webview.rs"]
+pub mod create_webview;
+
+#[path = "./lib/webview_windows/webview_windows_manager.rs"]
+pub mod webview_windows_manager;
+
+#[path = "./lib/user_events/user_events.rs"]
 pub mod user_events;
 
-#[path = "./lib/commands_reg.rs"]
-pub mod commands_reg;
+#[path = "./lib/user_events/user_events_handler.rs"]
+pub mod user_events_handler;
 
-#[path = "./lib/commands.rs"]
+#[path = "./lib/commands/commands_registry.rs"]
+pub mod commands_registry;
+
+#[path = "./lib/commands/commands.rs"]
 pub mod commands;
+
+#[path = "./lib/tasks/tasks_prototype.rs"]
+pub mod tasks_prototype;
+
+#[path = "./lib/tasks/task_args.rs"]
+pub mod task_args;
+
+#[path = "./lib/tasks/tasks.rs"]
+pub mod tasks;
+
+#[path = "./lib/tasks/tasks_manager.rs"]
+pub mod tasks_manager;
 
 #[path = "./lib/ipc_handler.rs"]
 pub mod ipc_handler;

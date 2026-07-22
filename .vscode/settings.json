@@ -1,4 +1,15 @@
 // "learn/Cargo.toml"
 {
-    "rust-analyzer.linkedProjects": ["rust-backend/Cargo.toml"]
+    "rust-analyzer.linkedProjects": ["rust-backend/Cargo.toml"],
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "keyword.control.task.repeat",
+                "settings": {
+                    "foreground": "#ff00d4",
+                    "fontStyle": "bold"
+                }
+            }
+        ]
+    }
 }
