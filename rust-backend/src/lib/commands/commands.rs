@@ -111,7 +111,7 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
 
     let mut entries = Vec::new();
 
-    println!("Path: {path}");
+    println!("Reading path: {path}");
 
     while let Ok(entry_opt) = dir_contents.next_entry().await {
         let entry = match entry_opt {
@@ -144,7 +144,7 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
 
     // compare_yield_vs_no_yield().await;
 
-    println!("Done with dir...");
+    println!("Done reading dir: {path}");
 
     let entries_json = serde_json::to_string(&entries).unwrap_or(String::new());
     Ok(entries_json)
