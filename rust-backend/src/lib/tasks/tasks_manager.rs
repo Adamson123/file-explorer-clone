@@ -3,14 +3,12 @@ use std::{
     future::Future,
     pin::Pin,
     sync::Arc,
-    time::Duration,
 };
 
 use serde_json::{json, Value};
 use tokio::{
     sync::mpsc::{channel, Receiver, Sender},
     task::JoinHandle,
-    time::sleep,
 };
 
 use crate::{
