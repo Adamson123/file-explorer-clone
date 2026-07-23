@@ -36,7 +36,7 @@ pub struct TaskManager {
     pub task_channels: HashMap<String, Sender<TaskMsg>>,
     // pub globals: Arc<Globals>,
 }
-
+//TODO: Tasks of closed windows should be shutdown
 impl TaskManager {
     pub fn register_task(&mut self, task: Task) {
         self.tasks.insert(task.name, task.function);
@@ -97,6 +97,7 @@ impl TaskManager {
             let window_key = window_key.to_string();
             let globals = globals.clone();
             let event_name = event_name.clone();
+            //   let task_id = task_id.clone();
 
             async move {
                 sleep(Duration::from_secs_f64(1.5)).await;
@@ -105,12 +106,22 @@ impl TaskManager {
                 let js_event =
                     construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
 
-                let _ = globals.tasks_event_loop_proxy.lock().await.send_event(
-                    UserEvent::WebviewEvent(
-                        window_key.to_string(),
-                        WebviewEvent::EvaluateScript(js_event),
-                    ),
-                );
+                let _ =
+                    {
+                        globals.tasks_event_loop_proxy.lock().await.send_event(
+                            UserEvent::WebviewEvent(
+                                window_key.to_string(),
+                                WebviewEvent::EvaluateScript(js_event),
+                            ),
+                        )
+                    };
+
+                globals
+                    .tasks_manager
+                    .lock()
+                    .await
+                    .task_channels
+                    .remove(&task_id);
             }
         });
 

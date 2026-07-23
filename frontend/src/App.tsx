@@ -77,8 +77,9 @@ function App() {
     const create_window = async () => {
         const req = await invoke_command("create_window", {
             window_name: "Note.txt",
-            url: `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt", //"http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", ,
+            url: "http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", ,
         });
+        //  `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
         console.log(req);
     };
 
@@ -121,7 +122,7 @@ function App() {
                 <div>
                     <h1>Get started</h1>
                     <p>
-                        Edit <code>src/App.tsx</code> and save to test{" "}
+                        Edit <code>src/App.tsx</code> and save to test ooo{" "}
                         <code>HMR</code>
                     </p>
                 </div>
