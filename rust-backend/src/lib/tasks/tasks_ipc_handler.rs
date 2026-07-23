@@ -19,6 +19,8 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let window_key = window_key.to_string();
             let globals = globals.clone();
 
+            println!("Args ooo: {}", args.clone().unwrap());
+
             async move {
                 let event_name = globals.tasks_manager.lock().await.start_task(
                     &task_name,

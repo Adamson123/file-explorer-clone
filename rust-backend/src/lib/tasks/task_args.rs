@@ -97,8 +97,6 @@ impl TaskArgs {
             return self.task_handle.clone();
         }
 
-        println!("Got : {}", msg.clone().unwrap());
-
         let state = get_field_as_string(&msg.unwrap(), "state");
         let state = if state == "pause" {
             TaskHandle::Pause
@@ -115,8 +113,6 @@ impl TaskArgs {
     pub async fn send_msg(&self, msg: &Value) {
         let msg = msg.clone();
         let js_event = construct_js_event(&self.event_name, &msg);
-
-        // println!("{js_event}");
 
         let _ =
             self.globals

@@ -1,3 +1,4 @@
+import { parseJson } from "../utils";
 import { RustError } from "./error";
 
 type IPCHandlerExecutors = {
@@ -18,26 +19,6 @@ class IPCHandler {
         return id;
     }
 
-    static parseResponse(data: any) {
-        try {
-            // let d = JSON.parse(data);
-            // console.log({ dddd: d });
-            // return d;
-            return JSON.parse(data);
-        } catch (error) {
-            //   console.log("Not parsable");
-            return data;
-        }
-    }
-
-    // static parseResponseFields(data: any) {
-    //     try {
-    //         return JSON.parse(data);
-    //     } catch (error) {
-    //         return data;
-    //     }
-    // }
-
     static listen() {
         document.addEventListener("ipc-response", (event: Event) => {
             const customEvent = event as CustomEvent;
@@ -46,7 +27,7 @@ class IPCHandler {
             const executor = IPCHandler.executors.get(id);
 
             if (data) {
-                executor?.resolve(IPCHandler.parseResponse(data));
+                executor?.resolve(parseJson(data));
                 //   console.log("Resolved: " + data, "Id: " + id);
             }
             if (error) {

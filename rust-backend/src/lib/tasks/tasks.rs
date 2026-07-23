@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use serde_json::json;
+use serde_json::{json, Value};
 use tokio::time::sleep;
 
 use crate::{
@@ -90,16 +90,24 @@ task!(monitor_dir, |a| {
         // println!("Iteration: {i}");
         // println!("{x}");
 
-        if x.as_object().unwrap().len() > 0 {
-            // println!("Recieved: {x}");
-            // println!("Iteration: {i}");
-            // a.send_msg(&json!({"your_msg":x,"rust_msg":"back from rust"}))
-            //     .await;
+        match &x {
+            Value::Object(_x) => {
+                if x.as_object().unwrap().len() > 0 {
+                    // println!("Recieved: {x}");
+                    // println!("Iteration: {i}");
+                    // a.send_msg(&json!({"your_msg":x,"rust_msg":"back from rust"}))
+                    //     .await;
 
-            let path = get_field_as_string(&x, "path");
-            if !path.is_empty() {
-                println!("current_path saved");
-                current_path = x.clone();
+                    println!("Recieved: {}", x);
+                    let path = get_field_as_string(&x, "path");
+                    if !path.is_empty() {
+                        println!("current_path saved");
+                        current_path = x.clone();
+                    }
+                }
+            }
+            _ => {
+                println!("Recieved: {}", x);
             }
         }
 
@@ -116,5 +124,8 @@ task!(monitor_dir, |a| {
 
     println!("Monitor done");
 
-    Ok(String::from(format!("{} is done...", a.event_name)))
+    //format!("{} is done...", a.event_name)
+    Ok(String::from(
+        json!({"msg":format!("{} is done...", a.event_name)}).to_string(),
+    ))
 });

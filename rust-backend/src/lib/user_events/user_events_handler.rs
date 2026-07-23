@@ -111,8 +111,6 @@ pub fn user_events_handler(
                         let _ = webview_window.webview.evaluate_script(&script);
                     }
                 }
-
-                //TODO: Each tasks should store window id for the window from which they are called from, so they only send event only to the window
             }
         },
     }

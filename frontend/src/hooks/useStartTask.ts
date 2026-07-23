@@ -1,23 +1,22 @@
-import { useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import IPCHandler from "../lib/ipc_handler";
-
-const parseResponse = (data: any) => {
-    try {
-        return JSON.parse(data);
-    } catch (error) {
-        return data;
-    }
-};
+import { parseJson } from "../utils";
 
 function useStartTask(task_name: string) {
     let called_ref = useRef(false);
     let event_name_ref = useRef("");
+    const message_listeners_ref = useRef<
+        { callback: (e: any) => void; id: string }[]
+    >([]);
+    const exit_listeners_ref = useRef<
+        { callback: (e: any) => void; id: string }[]
+    >([]);
 
-    const start_task = async (args: any) => {
+    const start_task = useCallback(async (args: any) => {
         if (called_ref.current) return;
         called_ref.current = true;
 
-        const e_name = await new Promise((res, rej) => {
+        const event_name = await new Promise((res, rej) => {
             const id = IPCHandler.addPromise(res, rej);
             (window as any).ipc.postMessage(
                 JSON.stringify({
@@ -29,161 +28,124 @@ function useStartTask(task_name: string) {
                 }),
             );
         });
-        event_name_ref.current = e_name as string;
+        event_name_ref.current = event_name as string;
 
-        return e_name;
-    };
-
-    const listener = {
-        listeners: [] as (() => void)[],
-        on_message(callback: (d: any) => void) {
-            console.log("Started listening");
-            const fn = (event: any) => {
-                callback(parseResponse(event.detail));
-            };
-            document.addEventListener(event_name_ref.current as string, fn);
-
-            let f = () => {
-                document.removeEventListener(
-                    event_name_ref.current as string,
-                    fn,
+        document.addEventListener(event_name as string, (e: any) => {
+            if (message_listeners_ref.current.length) {
+                message_listeners_ref.current.forEach((f) =>
+                    f.callback(parseJson(e.detail)),
                 );
-                console.log("Stopped listening");
-            };
-            this.listeners.push(f);
-            return f;
-        },
-
-        on_exit(callback: (d: any) => void) {
-            let event_name_exit = event_name_ref.current + "_exit";
-            const fn = (event: any) => {
-                callback(parseResponse(event.detail));
-                document.removeEventListener(event_name_exit as string, fn);
-            };
-            document.addEventListener(event_name_exit as string, fn);
-        },
-
-        send_msg: (args: any) => {
-            (window as any).ipc.postMessage(
-                JSON.stringify({
-                    event_name: event_name_ref.current,
-                    args: { sender: "listener", data: args },
-                    msg_type: "task",
-                    action: "task_msg",
-                }),
-            );
-        },
-
-        pause: () => {
-            (window as any).ipc.postMessage(
-                JSON.stringify({
-                    event_name: event_name_ref.current,
-                    args: { sender: "manager", data: { state: "pause" } },
-                    msg_type: "task",
-                    action: "task_msg",
-                }),
-            );
-        },
-
-        resume: () => {
-            (window as any).ipc.postMessage(
-                JSON.stringify({
-                    event_name: event_name_ref.current,
-                    args: { sender: "manager", data: { state: "run" } },
-                    msg_type: "task",
-                    action: "task_msg",
-                }),
-            );
-        },
-
-        cancel() {
-            (window as any).ipc.postMessage(
-                JSON.stringify({
-                    event_name: event_name_ref.current,
-                    args: { sender: "manager", data: { state: "cancel" } },
-                    msg_type: "task",
-                    action: "task_msg",
-                }),
-            );
-
-            if (this.listeners.length) {
-                this.listeners.forEach((f) => {
-                    f();
-                });
-                console.log("Removed all listeners...");
             }
+        });
 
-            called_ref.current = false;
-        },
-    };
+        let event_name_exit = event_name + "_exit";
+        document.addEventListener(event_name_exit, (e: any) => {
+            if (exit_listeners_ref.current.length) {
+                exit_listeners_ref.current.forEach((f) =>
+                    f.callback(parseJson(e.detail)),
+                );
+            }
+        });
+
+        return event_name;
+    }, []);
+
+    const listener = useMemo(() => {
+        return {
+            // listeners: [] as (() => void)[],
+            on_message(callback: (e: any) => void, id: string) {
+                if (
+                    message_listeners_ref.current.map((c) => c?.id).includes(id)
+                ) {
+                    return () => {};
+                }
+
+                message_listeners_ref.current.push({ id, callback });
+                return () => {
+                    message_listeners_ref.current =
+                        message_listeners_ref.current.filter(
+                            (f) => f.id !== id,
+                        );
+                    console.log("Removed");
+                };
+            },
+
+            on_exit(
+                callback: (e: any) => void,
+                id: string = crypto.randomUUID(),
+            ) {
+                if (exit_listeners_ref.current.map((c) => c?.id).includes(id)) {
+                    return () => {};
+                }
+
+                exit_listeners_ref.current.push({ id, callback });
+                return () => {
+                    exit_listeners_ref.current =
+                        exit_listeners_ref.current.filter((f) => f.id !== id);
+                    console.log("Removed");
+                };
+            },
+
+            send_msg: (args: any) => {
+                (window as any).ipc.postMessage(
+                    JSON.stringify({
+                        event_name: event_name_ref.current,
+                        args: { sender: "listener", data: args },
+                        msg_type: "task",
+                        action: "task_msg",
+                    }),
+                );
+            },
+
+            pause: () => {
+                (window as any).ipc.postMessage(
+                    JSON.stringify({
+                        event_name: event_name_ref.current,
+                        args: { sender: "manager", data: { state: "pause" } },
+                        msg_type: "task",
+                        action: "task_msg",
+                    }),
+                );
+            },
+
+            resume: () => {
+                (window as any).ipc.postMessage(
+                    JSON.stringify({
+                        event_name: event_name_ref.current,
+                        args: { sender: "manager", data: { state: "run" } },
+                        msg_type: "task",
+                        action: "task_msg",
+                    }),
+                );
+            },
+
+            cancel() {
+                (window as any).ipc.postMessage(
+                    JSON.stringify({
+                        event_name: event_name_ref.current,
+                        args: { sender: "manager", data: { state: "cancel" } },
+                        msg_type: "task",
+                        action: "task_msg",
+                    }),
+                );
+
+                called_ref.current = false;
+            },
+
+            remove_message_listener(id: string) {
+                message_listeners_ref.current =
+                    message_listeners_ref.current.filter((f) => f.id !== id);
+            },
+
+            remove_exit_listener(id: string) {
+                exit_listeners_ref.current = exit_listeners_ref.current.filter(
+                    (f) => f.id !== id,
+                );
+            },
+        };
+    }, []);
 
     return [listener, start_task] as const;
 }
-
-// type Listener = {
-//     listen: (callback: (d: any) => void) => void;
-//     send_msg: (args: any) => void;
-//     unlisten: () => void;
-// };
-
-// function useStartTask(
-//     task_name: string,
-// ): [Listener, (args: any) => Promise<unknown>] {
-//     const calledRef = useRef(false);
-//     const eventNameRef = useRef("");
-//     const listenerRef = useRef<((event: any) => void) | null>(null);
-
-//     const start_task = useCallback(
-//         async (args: any) => {
-//             if (calledRef.current) return;
-//             console.log("Ran");
-//             const e_name = await new Promise((res, rej) => {
-//                 const id = IPCHandler.addPromise(res, rej);
-//                 (window as any).ipc.postMessage(
-//                     JSON.stringify({
-//                         task_name,
-//                         args: { sender: "listener", data: args },
-//                         id,
-//                         msg_type: "task",
-//                         action: "start",
-//                     }),
-//                 );
-//             });
-//             calledRef.current = true;
-//             eventNameRef.current = e_name as string;
-//             return e_name;
-//         },
-//         [task_name],
-//     );
-
-//     const listener: Listener = {
-//         listen: useCallback((callback: (d: any) => void) => {
-//             const handler = (event: any) => callback(event.detail);
-//             listenerRef.current = handler;
-//             document.addEventListener(eventNameRef.current, handler);
-//         }, []),
-//         send_msg: useCallback((args: any) => {
-//             (window as any).ipc.postMessage(
-//                 JSON.stringify({
-//                     event_name: eventNameRef.current,
-//                     args: { sender: "listener", data: args },
-//                     msg_type: "task",
-//                     action: "task_msg",
-//                 }),
-//             );
-//         }, []),
-//         unlisten: useCallback(() => {
-//             if (listenerRef.current) {
-//                 document.removeEventListener(
-//                     eventNameRef.current,
-//                     listenerRef.current,
-//                 );
-//                 listenerRef.current = null;
-//             }
-//         }, []),
-//     };
-
-//     return [listener, start_task];
-// }
 
 export default useStartTask;

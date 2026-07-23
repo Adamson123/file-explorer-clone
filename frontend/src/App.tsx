@@ -13,9 +13,9 @@ function App() {
     const minimize = useRef(true);
     const [listener, start_task] = useStartTask("monitor_dir");
     const [pathInput, setPathInput] = useState("");
+    const unlistener = useRef(() => {});
 
     useEffect(() => {
-        let un = () => {};
         let fn = (async () => {
             console.log("ss");
 
@@ -26,13 +26,13 @@ function App() {
 
             await start_task("hello");
 
-            un = listener.on_message((e) => {
+            listener.on_message((e) => {
                 console.log(e);
-            });
+            }, "1");
 
             listener.on_exit((e) => {
-                console.log("Exit: " + e);
-            });
+                console.log(e);
+            }, "1");
 
             listener.send_msg({
                 msg: "from frontend listener",
@@ -41,8 +41,7 @@ function App() {
         })();
 
         return () => {
-            un();
-            console.log("Called");
+            listener.cancel();
         };
     }, []);
 
@@ -180,10 +179,13 @@ function App() {
                     type="button"
                     className="counter"
                     onClick={() => {
-                        start_task("hello").then(() => {
+                        start_task({
+                            path: "C:\\Users\\Admin\\Downloads\\youtube-analysis\\requests",
+                        }).then(() => {
+                            listener.remove_message_listener("1");
                             listener.on_message((e) => {
                                 console.log(e);
-                            });
+                            }, "2");
                         });
                     }}
                 >

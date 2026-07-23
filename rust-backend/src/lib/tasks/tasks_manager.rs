@@ -50,9 +50,12 @@ impl TaskManager {
         globals: Arc<Globals>,
     ) -> Result<String, String> {
         let mut start_msg = start_msg.clone();
+
         if start_msg.is_some() {
-            let data = get_field_as_string(&start_msg.clone().unwrap(), "data");
-            start_msg = Some(json!({"data":data}));
+            let data = start_msg.unwrap();
+            let d = json!({});
+            let data = data.get("data").unwrap_or(&d).clone();
+            start_msg = Some(data);
         }
 
         //Find task
@@ -86,7 +89,6 @@ impl TaskManager {
         };
 
         //Task manager send end
-        // let tx_clone = tx.clone();
         self.task_channels.insert(event_name.clone(), tx);
 
         //Start task
@@ -122,12 +124,7 @@ impl TaskManager {
         msg: &Value,
     ) -> Option<Pin<Box<dyn Future<Output = ()> + Send + Sync + '_>>> {
         let channel = self.task_channels.get(event_name);
-
         let msg = msg.clone();
-        // println!(
-        //     "Original data: {}",
-        //     msg.get("data").unwrap_or(&json!({})).clone()
-        // );
 
         let sender = if get_field_as_string(&msg, "sender") == "manager" {
             MsgSender::Manager
@@ -140,11 +137,6 @@ impl TaskManager {
                 data: msg.get("data").unwrap_or(&json!({})).clone(),
                 sender,
             });
-
-            // println!(
-            //     "Original data again: {}",
-            //     msg.get("data").unwrap_or(&json!({})).clone()
-            // );
 
             let f = async move {
                 let _ = fx.await;
