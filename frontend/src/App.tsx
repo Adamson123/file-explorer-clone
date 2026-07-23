@@ -11,7 +11,7 @@ import useStartTask from "./hooks/useStartTask";
 function App() {
     const [count, setCount] = useState(0);
     const minimize = useRef(true);
-    const [listener, start_task] = useStartTask("monitordir");
+    const { events_handler, start_task } = useStartTask("monitor_dir");
     const [pathInput, setPathInput] = useState("");
 
     useEffect(() => {
@@ -25,22 +25,22 @@ function App() {
 
             await start_task("hello");
 
-            listener.on_message((e) => {
+            events_handler.add_message_listener((e) => {
                 console.log(e);
             }, "1");
 
-            listener.on_exit((e) => {
+            events_handler.add_exit_listener((e) => {
                 console.log(e);
             }, "1");
 
-            listener.send_msg({
+            events_handler.send_msg({
                 msg: "from frontend listener",
                 path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
             });
         })();
 
         return () => {
-            listener.cancel();
+            events_handler.cancel();
         };
     }, []);
 
@@ -135,7 +135,7 @@ function App() {
                         type="button"
                         className="p-2.5 bg-red-300 hover:bg-red-500 active:scale-95"
                         onClick={() => {
-                            listener.send_msg({
+                            events_handler.send_msg({
                                 msg: "from frontend again!!!",
                                 path: pathInput, //.replaceAll("\\", "\\\\"),
                             });
@@ -149,7 +149,7 @@ function App() {
                     type="button"
                     className="counter"
                     onClick={() => {
-                        listener.pause();
+                        events_handler.pause();
                     }}
                 >
                     Pause
@@ -159,7 +159,7 @@ function App() {
                     type="button"
                     className="counter"
                     onClick={() => {
-                        listener.resume();
+                        events_handler.resume();
                     }}
                 >
                     Resume
@@ -169,7 +169,7 @@ function App() {
                     type="button"
                     className="counter"
                     onClick={() => {
-                        listener.cancel();
+                        events_handler.cancel();
                     }}
                 >
                     Cancel
@@ -182,8 +182,8 @@ function App() {
                         start_task({
                             path: "C:\\Users\\Admin\\Downloads\\youtube-analysis\\requests",
                         }).then(() => {
-                            listener.remove_message_listener("1");
-                            listener.on_message((e) => {
+                            events_handler.remove_message_listener("1");
+                            events_handler.add_message_listener((e) => {
                                 console.log(e);
                             }, "2");
                         });

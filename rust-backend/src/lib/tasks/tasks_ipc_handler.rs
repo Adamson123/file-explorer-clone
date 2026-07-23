@@ -15,16 +15,16 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
         tokio::task::spawn({
             let task_name = get_field_as_string(body, "task_name");
             let id = get_field_as_string(body, "id");
+            let task_id = get_field_as_string(body, "task_id");
+
             let args = body.get("args").cloned();
             let window_key = window_key.to_string();
             let globals = globals.clone();
-            //TODO:  Task id should be sent from frontend
-
-            println!("Args ooo: {}", args.clone().unwrap());
 
             async move {
                 let event_name = globals.tasks_manager.lock().await.start_task(
                     &task_name,
+                    &task_id,
                     &window_key,
                     &args,
                     globals.clone(),
@@ -34,6 +34,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                     ("".into(), event_name.unwrap())
                 } else {
                     (event_name.err().unwrap_or(String::new()), "".into())
+                    //TODO: Maybe also fire frontend task error eventlistener
                 };
 
                 let response = json!({"id":id, "error": error, "data": event_name  });
@@ -50,7 +51,9 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
     //Msg
     if action == "task_msg" {
         tokio::task::spawn({
+            //TODO: Use event_name + _error to determine frontend task error eventlistener
             let event_name = get_field_as_string(body, "event_name");
+            //let task_id = get_field_as_string(body, "task_id");
             let args = body.get("args").cloned();
             let globals = globals.clone();
 
@@ -65,6 +68,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                     s.await;
                 } else {
                     //TODO
+                    println!("Event not found: {event_name}")
                 }
             }
         });

@@ -92,7 +92,16 @@ task!(monitor_dir, |a| {
     let mut j = 0;
 
     repeat_while!(j < 100, a, |_i| {
-        let x = a.recv_listener_msg().unwrap_or(def.clone());
+        let x = a.recv_listener_msg();
+
+        if x.is_some() {
+            a.send_msg(&json!({"from":"rust","msg":x.clone()})).await;
+        }
+
+        // if x.is_none() {
+        //     x = def.clone();
+        // }
+        let x = x.unwrap_or(def.clone());
 
         match &x {
             Value::Object(_x) => {

@@ -12,7 +12,6 @@ use tokio::{
     task::JoinHandle,
     time::sleep,
 };
-use uuid::Uuid;
 
 use crate::{
     globals::Globals,
@@ -71,6 +70,7 @@ impl TaskManager {
     pub fn start_task(
         &mut self,
         task_name: &str,
+        task_id: &str,
         window_key: &str,
         start_msg: &Option<Value>,
         globals: Arc<Globals>,
@@ -84,19 +84,15 @@ impl TaskManager {
             start_msg = Some(data);
         }
 
-        //Find task
         let task = self.tasks.get(task_name);
-        if task.is_none() {
-            return Err("Task not found".into());
-        }
-
-        let task_id = Uuid::new_v4().to_string();
+        //Find task
         let event_name = format!("{task_name}_{task_id}");
-
         //Setup communication channel
         let (tx, rx): (Sender<TaskMsg>, Receiver<TaskMsg>) = channel(32);
 
-        //let globals = globals.clone();
+        if task.is_none() {
+            return Err("Task not found".into());
+        }
 
         //Task recieve end
 
@@ -108,14 +104,12 @@ impl TaskManager {
             manager_last_read: None,
 
             reciever: rx,
-            globals: globals.clone(),
             event_name: event_name.clone(),
             window_key: window_key.to_string(),
             task_handle: TaskHandle::Run,
-        };
 
-        //Task manager send end
-        // self.task_channels.insert(event_name.clone(), tx);
+            globals: globals.clone(),
+        };
 
         //Start task
         let task = task.unwrap().clone();
@@ -123,21 +117,19 @@ impl TaskManager {
             let window_key = window_key.to_string();
             let globals = globals.clone();
             let event_name = event_name.clone();
-            //let task_id = task_id.clone();
+            let task_id = task_id.to_string();
 
             async move {
-                sleep(Duration::from_secs_f64(1.5)).await;
+                //  sleep(Duration::from_secs_f64(1.5)).await;
                 let exit_msg = task(task_args).await.unwrap_or("".into());
 
                 let js_event =
                     construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
 
-                let _ = {
-                    globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                        window_key.to_string(),
-                        WebviewEvent::EvaluateScript(js_event),
-                    ))
-                };
+                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                    window_key.to_string(),
+                    WebviewEvent::EvaluateScript(js_event),
+                ));
 
                 globals
                     .tasks_manager
