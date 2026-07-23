@@ -2,17 +2,8 @@ use serde_json::Value;
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use crate::globals::Globals;
-//use wry::WebView;
 
-// pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send + Sync>>;
-
-//pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send>>;
-
-//pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>>>>;
-//pub type BoxFuture = Pin<Box<dyn Future<Output = Result<String, String>>>>;
-//Arc<Mutex<Globals>>
-//type CommandFnType = dyn for<'a> Fn(&'a Value, &'a Globals) -> BoxFuture<'a> ;
-pub type BoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send + Sync>>;
+pub type BoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send>>;
 pub type CommandFnType =
     Arc<Box<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> BoxFuture<'a> + Send + Sync>>;
 

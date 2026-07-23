@@ -36,7 +36,7 @@ macro_rules! repeat_while {
     };
 }
 
-macro_rules! repeat_for {
+macro_rules! _repeat_for {
     (
         $count:expr,
         $a:expr,

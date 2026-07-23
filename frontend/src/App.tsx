@@ -134,11 +134,11 @@ function App() {
                     />
                     <button
                         type="button"
-                        className="p-2.5 bg-red-300"
+                        className="p-2.5 bg-red-300 hover:bg-red-500 active:scale-95"
                         onClick={() => {
                             listener.send_msg({
                                 msg: "from frontend again!!!",
-                                path: pathInput.replaceAll("\\", "\\\\"),
+                                path: pathInput, //.replaceAll("\\", "\\\\"),
                             });
                         }}
                     >

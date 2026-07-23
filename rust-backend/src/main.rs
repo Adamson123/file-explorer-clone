@@ -33,7 +33,7 @@ async fn main() {
     //  commands_register.register_command(monitor_dir());
 
     let mut task_manager = TaskManager {
-        task_channels: HashMap::new(),
+        active_tasks: HashMap::new(),
         tasks: HashMap::new(),
     };
     task_manager.register_task(monitor_dir());

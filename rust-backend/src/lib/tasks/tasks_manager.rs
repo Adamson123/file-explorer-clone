@@ -1,8 +1,15 @@
-use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, VecDeque},
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    time::Duration,
+};
 
 use serde_json::{json, Value};
 use tokio::{
     sync::mpsc::{channel, Receiver, Sender},
+    task::JoinHandle,
     time::sleep,
 };
 use uuid::Uuid;
@@ -14,7 +21,7 @@ use crate::{
     utils::{construct_js_event, get_field_as_string},
 };
 
-pub type TaskBoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send + Sync>>;
+pub type TaskBoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send>>;
 pub type TaskFnType = Arc<Box<dyn Fn(TaskArgs) -> TaskBoxFuture + Send + Sync>>;
 
 pub struct Task {
@@ -23,17 +30,36 @@ pub struct Task {
 }
 
 pub struct ActiveTask {
-    //  listeners:i32,
-    // thread_id: JoinHandle<F::Output>
+    pub handle: JoinHandle<()>,
+    pub sender: Sender<TaskMsg>,
+    pub window_key: String,
+}
+
+impl ActiveTask {
+    pub fn send_msg(&self, msg: &Value) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        let msg = msg.clone();
+
+        let sender = if get_field_as_string(&msg, "sender") == "manager" {
+            MsgSender::Manager
+        } else {
+            MsgSender::Listener
+        };
+
+        let f = self.sender.send(TaskMsg {
+            data: msg.get("data").unwrap_or(&json!({})).clone(),
+            sender,
+        });
+        Box::pin(async move {
+            let _ = f.await;
+        })
+    }
 }
 
 pub struct TaskManager {
     /* name, task */
     pub tasks: HashMap<String, TaskFnType>,
-    /* task id, (listeners) */
-    //  pub active_tasks: HashMap<String, i32>,
-    /* task id, sender */
-    pub task_channels: HashMap<String, Sender<TaskMsg>>,
+    /* event_name, active_task */
+    pub active_tasks: HashMap<String, ActiveTask>,
     // pub globals: Arc<Globals>,
 }
 //TODO: Tasks of closed windows should be shutdown
@@ -75,8 +101,8 @@ impl TaskManager {
         //Task recieve end
 
         let task_args = TaskArgs {
-            listener_buffer: vec![start_msg.unwrap_or(json!({}))], //start_msg.clone(),
-            manager_buffer: Vec::new(),
+            listener_buffer: VecDeque::from([start_msg.unwrap_or(json!({}))]), //start_msg.clone(),
+            manager_buffer: VecDeque::new(),
 
             listener_last_read: None, //start_msg,
             manager_last_read: None,
@@ -89,15 +115,15 @@ impl TaskManager {
         };
 
         //Task manager send end
-        self.task_channels.insert(event_name.clone(), tx);
+        // self.task_channels.insert(event_name.clone(), tx);
 
         //Start task
         let task = task.unwrap().clone();
-        let _handle = tokio::task::spawn({
+        let handle = tokio::task::spawn({
             let window_key = window_key.to_string();
             let globals = globals.clone();
             let event_name = event_name.clone();
-            //   let task_id = task_id.clone();
+            //let task_id = task_id.clone();
 
             async move {
                 sleep(Duration::from_secs_f64(1.5)).await;
@@ -117,10 +143,19 @@ impl TaskManager {
                     .tasks_manager
                     .lock()
                     .await
-                    .task_channels
+                    .active_tasks
                     .remove(&task_id);
             }
         });
+
+        self.active_tasks.insert(
+            event_name.clone(),
+            ActiveTask {
+                handle,
+                sender: tx,
+                window_key: window_key.to_string(),
+            },
+        );
 
         println!("{event_name} started...");
         Ok(String::from(event_name))
@@ -130,28 +165,42 @@ impl TaskManager {
         &self,
         event_name: &str,
         msg: &Value,
-    ) -> Option<Pin<Box<dyn Future<Output = ()> + Send + Sync + '_>>> {
-        let channel = self.task_channels.get(event_name);
-        let msg = msg.clone();
+    ) -> Option<Pin<Box<dyn Future<Output = ()> + Send + '_>>> {
+        let active_task = self.active_tasks.get(event_name);
 
-        let sender = if get_field_as_string(&msg, "sender") == "manager" {
-            MsgSender::Manager
+        if active_task.is_some() {
+            let f = active_task.unwrap().send_msg(msg);
+            Some(Box::pin(f))
         } else {
-            MsgSender::Listener
-        };
-
-        if let Some(c) = channel {
-            let fx = c.send(TaskMsg {
-                data: msg.get("data").unwrap_or(&json!({})).clone(),
-                sender,
-            });
-
-            let f = async move {
-                let _ = fx.await;
-            };
-
-            return Some(Box::pin(f));
+            None
         }
-        None
+    }
+
+    pub fn end_task_with_window_key(&mut self, window_key: &str) {
+        if !self.active_tasks.is_empty() {
+            self.active_tasks.retain(|k, value| {
+                if value.window_key != window_key {
+                    return true;
+                } else {
+                    println!("Ended task with key : {k}",);
+                    value.handle.abort();
+                    return false;
+                }
+            });
+        }
+    }
+
+    pub fn end_task_with_windows_key_m(&mut self, windows_key: &Vec<String>) {
+        if !self.active_tasks.is_empty() {
+            self.active_tasks.retain(|k, value| {
+                if !windows_key.contains(&value.window_key) {
+                    return true;
+                } else {
+                    println!("Ended task with key : {k}",);
+                    value.handle.abort();
+                    return false;
+                }
+            });
+        }
     }
 }

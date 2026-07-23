@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use serde_json::Value;
 use tokio::sync::mpsc::Receiver;
@@ -31,8 +31,8 @@ pub struct TaskMsg {
 pub struct TaskArgs {
     pub reciever: Receiver<TaskMsg>,
 
-    pub listener_buffer: Vec<Value>,
-    pub manager_buffer: Vec<Value>,
+    pub listener_buffer: VecDeque<Value>,
+    pub manager_buffer: VecDeque<Value>,
 
     pub listener_last_read: Option<Value>,
     pub manager_last_read: Option<Value>,
@@ -58,10 +58,10 @@ impl TaskArgs {
             //  println!("Try Rec got: {:#?}", msg.clone().unwrap());
             match msg.clone().unwrap().sender {
                 MsgSender::Listener => {
-                    self.listener_buffer.push(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
+                    self.listener_buffer.push_back(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
                 }
                 MsgSender::Manager => {
-                    self.manager_buffer.push(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
+                    self.manager_buffer.push_back(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
                 }
             }
         }
@@ -71,7 +71,7 @@ impl TaskArgs {
         self.get_msg();
 
         if !self.listener_buffer.is_empty() {
-            self.listener_last_read = Some(self.listener_buffer.remove(0));
+            self.listener_last_read = Some(self.listener_buffer.pop_front().unwrap());
             return self.listener_last_read.clone();
         }
 
@@ -83,10 +83,9 @@ impl TaskArgs {
 
         if !self.manager_buffer.is_empty() {
             // return Some(self.manager_buffer.remove(0));
-            self.manager_last_read = Some(self.manager_buffer.remove(0));
+            self.manager_last_read = Some(self.manager_buffer.pop_front().unwrap());
             return self.manager_last_read.clone();
         }
-
         None
     }
 
