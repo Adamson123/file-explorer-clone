@@ -15,7 +15,8 @@ function App() {
     const [pathInput, setPathInput] = useState("");
 
     useEffect(() => {
-        (async () => {
+        let un = () => {};
+        let fn = (async () => {
             console.log("ss");
 
             const res = await invoke_command<{ name: string }>("log_struct", {
@@ -25,7 +26,7 @@ function App() {
 
             await start_task("hello");
 
-            listener.on_message((e) => {
+            un = listener.on_message((e) => {
                 console.log(e);
             });
 
@@ -38,6 +39,11 @@ function App() {
                 path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
             });
         })();
+
+        return () => {
+            un();
+            console.log("Called");
+        };
     }, []);
 
     const minimize_window = async () => {
@@ -120,23 +126,25 @@ function App() {
                         <code>HMR</code>
                     </p>
                 </div>
-                <input
-                    onChange={(e) => setPathInput(e.target.value)}
-                    type="text"
-                    className="w-100 bg-red-500/40 p-2"
-                />
-                <button
-                    type="button"
-                    className="counter"
-                    onClick={() => {
-                        listener.send_msg({
-                            msg: "from frontend again!!!",
-                            path: pathInput.replaceAll("\\", "\\\\"),
-                        });
-                    }}
-                >
-                    Send dir
-                </button>
+                <div className="flex items-center">
+                    <input
+                        onChange={(e) => setPathInput(e.target.value)}
+                        type="text"
+                        className="w-100  bg-red-500/40 p-2 border-2"
+                    />
+                    <button
+                        type="button"
+                        className="p-2.5 bg-red-300"
+                        onClick={() => {
+                            listener.send_msg({
+                                msg: "from frontend again!!!",
+                                path: pathInput.replaceAll("\\", "\\\\"),
+                            });
+                        }}
+                    >
+                        Send dir
+                    </button>
+                </div>
 
                 <button
                     type="button"
@@ -171,7 +179,13 @@ function App() {
                 <button
                     type="button"
                     className="counter"
-                    onClick={() => start_task("hello")}
+                    onClick={() => {
+                        start_task("hello").then(() => {
+                            listener.on_message((e) => {
+                                console.log(e);
+                            });
+                        });
+                    }}
                 >
                     Start
                 </button>

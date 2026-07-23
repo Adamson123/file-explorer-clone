@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
@@ -65,21 +65,11 @@ impl TaskArgs {
                 }
             }
         }
-
-        //TODO
-        //msg
     }
 
     pub fn recv_listener_msg(&mut self) -> Option<Value> {
         self.get_msg();
-        // let m = self.listener_msg.clone();
-        // self.listener_msg = None;
 
-        // if m.is_some() {
-        //     self.listener_buffer = m.clone();
-        // }
-
-        // m
         if !self.listener_buffer.is_empty() {
             self.listener_last_read = Some(self.listener_buffer.remove(0));
             return self.listener_last_read.clone();
@@ -90,14 +80,6 @@ impl TaskArgs {
 
     fn recv_manager_msg(&mut self) -> Option<Value> {
         self.get_msg();
-        // let m = self.manager_msg.clone();
-        // self.manager_msg = None;
-
-        // if m.is_some() {
-        //     self.manager_buffer = m.clone();
-        // }
-
-        // m
 
         if !self.manager_buffer.is_empty() {
             // return Some(self.manager_buffer.remove(0));

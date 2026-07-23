@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use serde_json::json;
-use tokio::{task::yield_now, time::sleep};
+use tokio::time::sleep;
 
 use crate::{
     commands::get_dir_c,

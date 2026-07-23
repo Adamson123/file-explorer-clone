@@ -1,15 +1,10 @@
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 import IPCHandler from "../lib/ipc_handler";
-import type { resume } from "react-dom/server";
 
 const parseResponse = (data: any) => {
     try {
-        // let d = JSON.parse(data);
-        // console.log({ dddd: d });
-        // return d;
         return JSON.parse(data);
     } catch (error) {
-        //   console.log("Not parsable");
         return data;
     }
 };
@@ -20,8 +15,8 @@ function useStartTask(task_name: string) {
 
     const start_task = async (args: any) => {
         if (called_ref.current) return;
-
         called_ref.current = true;
+
         const e_name = await new Promise((res, rej) => {
             const id = IPCHandler.addPromise(res, rej);
             (window as any).ipc.postMessage(
@@ -42,6 +37,7 @@ function useStartTask(task_name: string) {
     const listener = {
         listeners: [] as (() => void)[],
         on_message(callback: (d: any) => void) {
+            console.log("Started listening");
             const fn = (event: any) => {
                 callback(parseResponse(event.detail));
             };
@@ -52,8 +48,8 @@ function useStartTask(task_name: string) {
                     event_name_ref.current as string,
                     fn,
                 );
+                console.log("Stopped listening");
             };
-
             this.listeners.push(f);
             return f;
         },
@@ -62,7 +58,6 @@ function useStartTask(task_name: string) {
             let event_name_exit = event_name_ref.current + "_exit";
             const fn = (event: any) => {
                 callback(parseResponse(event.detail));
-
                 document.removeEventListener(event_name_exit as string, fn);
             };
             document.addEventListener(event_name_exit as string, fn);
@@ -113,9 +108,9 @@ function useStartTask(task_name: string) {
 
             if (this.listeners.length) {
                 this.listeners.forEach((f) => {
-                    console.log("Removed all listeners...");
                     f();
                 });
+                console.log("Removed all listeners...");
             }
 
             called_ref.current = false;
