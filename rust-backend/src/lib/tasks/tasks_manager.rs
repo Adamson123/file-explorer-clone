@@ -106,15 +106,12 @@ impl TaskManager {
                 let js_event =
                     construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
 
-                let _ =
-                    {
-                        globals.tasks_event_loop_proxy.lock().await.send_event(
-                            UserEvent::WebviewEvent(
-                                window_key.to_string(),
-                                WebviewEvent::EvaluateScript(js_event),
-                            ),
-                        )
-                    };
+                let _ = {
+                    globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                        window_key.to_string(),
+                        WebviewEvent::EvaluateScript(js_event),
+                    ))
+                };
 
                 globals
                     .tasks_manager

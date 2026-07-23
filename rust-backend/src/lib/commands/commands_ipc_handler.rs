@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use serde_json::{json, Value};
 use tao::event_loop::EventLoopProxy;
-use tokio::sync::Mutex;
 
 use crate::{
     globals::Globals,
@@ -11,7 +10,7 @@ use crate::{
 };
 
 pub async fn send_ipc_response(
-    proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
+    proxy: EventLoopProxy<UserEvent>,
     request_id: &str,
     window_key: &str,
     res: Result<String, String>,
@@ -28,7 +27,7 @@ pub async fn send_ipc_response(
 
     let js_event = construct_js_event("ipc-response", &json_response);
 
-    let _ = proxy.lock().await.send_event(UserEvent::WebviewEvent(
+    let _ = proxy.send_event(UserEvent::WebviewEvent(
         window_key.into(),
         WebviewEvent::EvaluateScript(js_event),
     ));

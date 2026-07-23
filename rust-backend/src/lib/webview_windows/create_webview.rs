@@ -32,7 +32,7 @@ pub fn create_webview(
 
             //Tokio spawn because ipc_handler does not accept async function
             tokio::task::spawn(async move {
-                let event_loop_proxy = globals_clone.event_loop_proxy.lock().await;
+                let event_loop_proxy = globals_clone.event_loop_proxy.clone();
                 let _ = event_loop_proxy.send_event(UserEvent::IPCMessage(window_key, msg_clone));
             });
 

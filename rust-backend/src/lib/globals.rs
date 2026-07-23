@@ -14,7 +14,7 @@ pub struct Globals {
     pub commands_register: Arc<Mutex<CommandsRegistry>>,
     pub tasks_manager: Arc<Mutex<TaskManager>>,
 
-    pub event_loop_proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
-    pub tasks_event_loop_proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
-    pub commands_event_loop_proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
+    pub event_loop_proxy: EventLoopProxy<UserEvent>,
+    // pub tasks_event_loop_proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
+    // pub commands_event_loop_proxy: Arc<Mutex<EventLoopProxy<UserEvent>>>,
 }

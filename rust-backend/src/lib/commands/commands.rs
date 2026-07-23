@@ -41,39 +41,27 @@ command!(log, |a, _g| {
 });
 
 command!(minimize_window, |a, g| {
-    let _ = g
-        .commands_event_loop_proxy
-        .lock()
-        .await
-        .send_event(UserEvent::WindowEvent(
-            get_field_as_string(a, "window_key"),
-            WindowEvent::Minimize(true),
-        ));
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::Minimize(true),
+    ));
     Ok(String::new())
 });
 
 command!(move_window, |a, g| {
-    let _ = g
-        .commands_event_loop_proxy
-        .lock()
-        .await
-        .send_event(UserEvent::WindowEvent(
-            get_field_as_string(a, "window_key"),
-            WindowEvent::DragWindow,
-        ));
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::DragWindow,
+    ));
     Ok(String::from("Moving window"))
 });
 
 command!(hide_decoration, |a, g| {
     let minimize = get_field_as_bool(&a, "minimize");
-    let _ = g
-        .commands_event_loop_proxy
-        .lock()
-        .await
-        .send_event(UserEvent::WindowEvent(
-            get_field_as_string(a, "window_key"),
-            WindowEvent::HideDecoration(minimize),
-        ));
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::HideDecoration(minimize),
+    ));
     Ok(String::from("Moving window"))
 });
 
@@ -159,8 +147,6 @@ command_struct!(create_window, |a, g| {
     };
 
     g.event_loop_proxy
-        .lock()
-        .await
         .send_event(UserEvent::CreateNewWindow(window_config))
         .map_err(|a| a.to_string())?;
 

@@ -114,14 +114,12 @@ impl TaskArgs {
         let msg = msg.clone();
         let js_event = construct_js_event(&self.event_name, &msg);
 
-        let _ =
-            self.globals
-                .tasks_event_loop_proxy
-                .lock()
-                .await
-                .send_event(UserEvent::WebviewEvent(
-                    self.window_key.clone(),
-                    WebviewEvent::EvaluateScript(js_event),
-                ));
+        let _ = self
+            .globals
+            .event_loop_proxy
+            .send_event(UserEvent::WebviewEvent(
+                self.window_key.clone(),
+                WebviewEvent::EvaluateScript(js_event),
+            ));
     }
 }

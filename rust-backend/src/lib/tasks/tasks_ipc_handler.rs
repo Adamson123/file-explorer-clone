@@ -40,12 +40,10 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
 
                 // sleep(Duration::from_secs_f64(0.1)).await;
                 println!("Sending back response");
-                let _ = globals.tasks_event_loop_proxy.lock().await.send_event(
-                    UserEvent::WebviewEvent(
-                        window_key.to_string(),
-                        WebviewEvent::EvaluateScript(js_event),
-                    ),
-                );
+                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                    window_key.to_string(),
+                    WebviewEvent::EvaluateScript(js_event),
+                ));
             }
         });
     }

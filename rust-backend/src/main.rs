@@ -40,16 +40,11 @@ async fn main() {
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let proxy = event_loop.create_proxy();
-    let tasks_proxy = event_loop.create_proxy();
-    let commands_proxy = event_loop.create_proxy();
 
     let globals = Globals {
         commands_register: Arc::new(Mutex::new(commands_register)),
         tasks_manager: Arc::new(Mutex::new(task_manager)),
-
-        event_loop_proxy: Arc::new(Mutex::new(proxy)),
-        tasks_event_loop_proxy: Arc::new(Mutex::new(tasks_proxy)),
-        commands_event_loop_proxy: Arc::new(Mutex::new(commands_proxy)),
+        event_loop_proxy: proxy,
     };
 
     let globals = Arc::new(globals);
