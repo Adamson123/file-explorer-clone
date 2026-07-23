@@ -11,12 +11,11 @@ import useStartTask from "./hooks/useStartTask";
 function App() {
     const [count, setCount] = useState(0);
     const minimize = useRef(true);
-    const [listener, start_task] = useStartTask("monitor_dir");
+    const [listener, start_task] = useStartTask("monitordir");
     const [pathInput, setPathInput] = useState("");
-    const unlistener = useRef(() => {});
 
     useEffect(() => {
-        let fn = (async () => {
+        (async () => {
             console.log("ss");
 
             const res = await invoke_command<{ name: string }>("log_struct", {

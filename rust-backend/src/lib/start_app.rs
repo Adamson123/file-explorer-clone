@@ -57,17 +57,27 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
                         webview_windows_manager.get_webview_window_by_tao_window_id(window_id);
 
                     if let Some(webview_window) = webview_window {
+                        let mut keys: Vec<String> = Vec::new();
+
                         if webview_window.key == main_window_key {
                             *control_flow = tao::event_loop::ControlFlow::Exit;
+
+                            let windows_key: Vec<String> = webview_windows_manager
+                                .webview_windows
+                                .iter()
+                                .map(|(v, _)| v.clone())
+                                .collect();
+                            keys = windows_key;
                         } else {
                             let key = webview_window.key.clone();
                             webview_windows_manager.remove_webview_window(&key);
-
-                            let task_manager = globals_clone_2.clone().tasks_manager.clone();
-                            tokio::task::spawn(async move {
-                                task_manager.lock().await.end_window_tasks(&key);
-                            });
+                            keys.push(key);
                         }
+
+                        let task_manager = globals_clone_2.clone().tasks_manager.clone();
+                        tokio::task::spawn(async move {
+                            task_manager.lock().await.end_multiple_window_tasks(&keys);
+                        });
                     }
                 }
 

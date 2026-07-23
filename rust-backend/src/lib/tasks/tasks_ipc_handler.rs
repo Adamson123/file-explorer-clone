@@ -18,6 +18,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let args = body.get("args").cloned();
             let window_key = window_key.to_string();
             let globals = globals.clone();
+            //TODO:  Task id should be sent from frontend
 
             println!("Args ooo: {}", args.clone().unwrap());
 
@@ -38,8 +39,6 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 let response = json!({"id":id, "error": error, "data": event_name  });
                 let js_event = construct_js_event("ipc-response", &response);
 
-                // sleep(Duration::from_secs_f64(0.1)).await;
-                println!("Sending back response");
                 let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                     window_key.to_string(),
                     WebviewEvent::EvaluateScript(js_event),
@@ -64,6 +63,8 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
 
                 if let Some(s) = sender {
                     s.await;
+                } else {
+                    //TODO
                 }
             }
         });
