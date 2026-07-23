@@ -176,7 +176,7 @@ impl TaskManager {
         }
     }
 
-    pub fn end_task_with_window_key(&mut self, window_key: &str) {
+    pub fn end_window_tasks(&mut self, window_key: &str) {
         if !self.active_tasks.is_empty() {
             self.active_tasks.retain(|k, value| {
                 if value.window_key != window_key {
@@ -190,7 +190,7 @@ impl TaskManager {
         }
     }
 
-    pub fn end_task_with_windows_key_m(&mut self, windows_key: &Vec<String>) {
+    pub fn end_multiple_window_tasks(&mut self, windows_key: &Vec<String>) {
         if !self.active_tasks.is_empty() {
             self.active_tasks.retain(|k, value| {
                 if !windows_key.contains(&value.window_key) {
