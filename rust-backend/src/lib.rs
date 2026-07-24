@@ -34,6 +34,9 @@ pub mod tasks;
 #[path = "./lib/tasks/tasks_manager.rs"]
 pub mod tasks_manager;
 
+#[path = "./lib/tasks/tasks_manager_start_task.rs"]
+pub mod tasks_manager_start_task;
+
 #[path = "./lib/tasks/tasks_ipc_handler.rs"]
 pub mod tasks_ipc_handler;
 

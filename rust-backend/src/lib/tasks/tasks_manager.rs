@@ -1,21 +1,14 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    future::Future,
-    pin::Pin,
-    sync::Arc,
-};
+use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use serde_json::{json, Value};
 use tokio::{
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::{mpsc::Sender, Mutex},
     task::JoinHandle,
 };
 
 use crate::{
-    globals::Globals,
-    task_args::{MsgSender, TaskArgs, TaskHandle, TaskMsg},
-    user_events::{UserEvent, WebviewEvent},
-    utils::{construct_js_event, get_field_as_string},
+    task_args::{MsgSender, TaskArgs, TaskMsg},
+    utils::get_field_as_string,
 };
 
 pub type TaskBoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send>>;
@@ -26,8 +19,9 @@ pub struct Task {
     pub function: TaskFnType,
 }
 
+pub type TaskHandle = Arc<Mutex<Option<JoinHandle<String>>>>;
 pub struct ActiveTask {
-    pub handle: JoinHandle<()>,
+    pub handle: TaskHandle,
     pub sender: Sender<TaskMsg>,
     pub window_key: String,
 }
@@ -65,94 +59,6 @@ impl TaskManager {
         self.tasks.insert(task.name, task.function);
     }
 
-    pub fn start_task(
-        &mut self,
-        task_name: &str,
-        task_id: &str,
-        window_key: &str,
-        start_msg: &Option<Value>,
-        globals: Arc<Globals>,
-    ) -> Result<String, String> {
-        let event_name = format!("{task_name}_{task_id}");
-
-        if self.active_tasks.contains_key(&event_name) {
-            return Err(format!("{event_name} is already running..."));
-        }
-
-        let mut start_msg = start_msg.clone();
-        if start_msg.is_some() {
-            let data = start_msg.unwrap();
-            let d = json!({});
-            let data = data.get("data").unwrap_or(&d).clone();
-            start_msg = Some(data);
-        }
-
-        //Find task
-        let task = self.tasks.get(task_name);
-        if task.is_none() {
-            return Err("Task not found".into());
-        }
-        //Setup communication channel
-        let (tx, rx): (Sender<TaskMsg>, Receiver<TaskMsg>) = channel(32);
-
-        //Task recieve end
-        let task_args = TaskArgs {
-            listener_buffer: VecDeque::from([start_msg.unwrap_or(json!({}))]), //start_msg.clone(),
-            manager_buffer: VecDeque::new(),
-
-            listener_last_read: None, //start_msg,
-            manager_last_read: None,
-
-            reciever: rx,
-            event_name: event_name.clone(),
-            window_key: window_key.to_string(),
-            task_handle: TaskHandle::Run,
-
-            globals: globals.clone(),
-        };
-
-        //Start task
-        let task = task.unwrap().clone();
-        let handle = tokio::task::spawn({
-            let window_key = window_key.to_string();
-            let globals = globals.clone();
-            let event_name = event_name.clone();
-            //let task_id = task_id.to_string();
-
-            async move {
-                //  sleep(Duration::from_secs_f64(1.5)).await;
-                let exit_msg = task(task_args).await.unwrap_or("".into());
-
-                let js_event =
-                    construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
-
-                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                    window_key.to_string(),
-                    WebviewEvent::EvaluateScript(js_event),
-                ));
-
-                globals
-                    .tasks_manager
-                    .lock()
-                    .await
-                    .active_tasks
-                    .remove(&event_name);
-            }
-        });
-
-        self.active_tasks.insert(
-            event_name.clone(),
-            ActiveTask {
-                handle,
-                sender: tx,
-                window_key: window_key.to_string(),
-            },
-        );
-
-        println!("{event_name} started...");
-        Ok(String::from(event_name))
-    }
-
     pub fn send_msg(
         &self,
         event_name: &str,
@@ -168,31 +74,47 @@ impl TaskManager {
         }
     }
 
-    pub fn end_window_tasks(&mut self, window_key: &str) {
+    pub async fn end_window_tasks(&mut self, window_key: &str) {
         if !self.active_tasks.is_empty() {
+            let mut handles: Vec<Arc<Mutex<Option<JoinHandle<String>>>>> = Vec::new();
             self.active_tasks.retain(|k, value| {
                 if value.window_key != window_key {
                     return true;
                 } else {
-                    println!("Ended task with key : {k}",);
-                    value.handle.abort();
+                    println!("Ended task with key : {k}");
+                    handles.push(value.handle.clone());
                     return false;
                 }
             });
+
+            for handle in handles {
+                let handle = handle.lock().await.take();
+                if let Some(h) = handle {
+                    h.abort();
+                }
+            }
         }
     }
 
-    pub fn end_multiple_window_tasks(&mut self, windows_key: &Vec<String>) {
+    pub async fn end_multiple_window_tasks(&mut self, windows_key: &Vec<String>) {
         if !self.active_tasks.is_empty() {
+            let mut handles: Vec<Arc<Mutex<Option<JoinHandle<String>>>>> = Vec::new();
             self.active_tasks.retain(|k, value| {
                 if !windows_key.contains(&value.window_key) {
                     return true;
                 } else {
                     println!("Ended task with key : {k}",);
-                    value.handle.abort();
+                    handles.push(value.handle.clone());
                     return false;
                 }
             });
+
+            for handle in handles {
+                let handle = handle.lock().await.take();
+                if let Some(h) = handle {
+                    h.abort();
+                }
+            }
         }
     }
 }
