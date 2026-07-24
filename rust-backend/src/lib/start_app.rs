@@ -64,9 +64,10 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
 
                             let windows_key: Vec<String> = webview_windows_manager
                                 .webview_windows
-                                .iter()
-                                .map(|(v, _)| v.clone())
+                                .keys()
+                                .map(|k| k.clone())
                                 .collect();
+
                             keys = windows_key;
                         } else {
                             let key = webview_window.key.clone();

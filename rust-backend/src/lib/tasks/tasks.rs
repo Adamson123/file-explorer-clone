@@ -95,15 +95,15 @@ task!(monitor_dir, |a| {
         let x = a.recv_listener_msg();
 
         if x.is_some() {
+            println!("Got this: {}", x.clone().unwrap());
             a.send_msg(&json!({"from":"rust","msg":x.clone()})).await;
         }
 
         let x = x.unwrap_or(def.clone());
-
         match &x {
             Value::Object(_x) => {
                 if x.as_object().unwrap().len() > 0 {
-                    println!("Recieved: {}", x);
+                    // println!("Recieved: {}", x);
                     let path = get_field_as_string(&x, "path");
                     if !path.is_empty() {
                         println!("current_path saved");
@@ -112,7 +112,7 @@ task!(monitor_dir, |a| {
                 }
             }
             _ => {
-                println!("Recieved: {}", x);
+                //println!("Recieved: {}", x);
             }
         }
 

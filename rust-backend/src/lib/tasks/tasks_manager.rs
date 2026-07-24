@@ -73,8 +73,13 @@ impl TaskManager {
         start_msg: &Option<Value>,
         globals: Arc<Globals>,
     ) -> Result<String, String> {
-        let mut start_msg = start_msg.clone();
+        let event_name = format!("{task_name}_{task_id}");
 
+        if self.active_tasks.contains_key(&event_name) {
+            return Err(format!("{event_name} is already running..."));
+        }
+
+        let mut start_msg = start_msg.clone();
         if start_msg.is_some() {
             let data = start_msg.unwrap();
             let d = json!({});
@@ -82,18 +87,15 @@ impl TaskManager {
             start_msg = Some(data);
         }
 
-        let task = self.tasks.get(task_name);
         //Find task
-        let event_name = format!("{task_name}_{task_id}");
-        //Setup communication channel
-        let (tx, rx): (Sender<TaskMsg>, Receiver<TaskMsg>) = channel(32);
-
+        let task = self.tasks.get(task_name);
         if task.is_none() {
             return Err("Task not found".into());
         }
+        //Setup communication channel
+        let (tx, rx): (Sender<TaskMsg>, Receiver<TaskMsg>) = channel(32);
 
         //Task recieve end
-
         let task_args = TaskArgs {
             listener_buffer: VecDeque::from([start_msg.unwrap_or(json!({}))]), //start_msg.clone(),
             manager_buffer: VecDeque::new(),
@@ -115,7 +117,7 @@ impl TaskManager {
             let window_key = window_key.to_string();
             let globals = globals.clone();
             let event_name = event_name.clone();
-            let task_id = task_id.to_string();
+            //let task_id = task_id.to_string();
 
             async move {
                 //  sleep(Duration::from_secs_f64(1.5)).await;
@@ -134,7 +136,7 @@ impl TaskManager {
                     .lock()
                     .await
                     .active_tasks
-                    .remove(&task_id);
+                    .remove(&event_name);
             }
         });
 

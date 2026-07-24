@@ -46,6 +46,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 ));
             }
         });
+        return;
     }
 
     //Msg
@@ -60,10 +61,9 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             async move {
                 let def = json!({});
                 let args = args.unwrap_or(def);
-                let tasks_manager = globals.tasks_manager.lock().await;
+                let tasks_manager = { globals.tasks_manager.lock().await };
 
                 let sender = tasks_manager.send_msg(&event_name, &args);
-
                 if let Some(s) = sender {
                     s.await;
                 } else {
@@ -72,5 +72,19 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 }
             }
         });
+        return;
+    }
+
+    //KillAll!
+    if action == "kill_all" {
+        tokio::task::spawn({
+            let window_key = window_key.to_string();
+            async move {
+                println!("kill all tasks with window_key: {window_key}");
+                let mut tasks_manager = { globals.tasks_manager.lock().await };
+                tasks_manager.end_window_tasks(&window_key);
+            }
+        });
+        return;
     }
 }

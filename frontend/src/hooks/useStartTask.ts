@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import IPCHandler from "../lib/ipc_handler";
 import { parseJson } from "../utils";
 
@@ -21,6 +21,18 @@ function useStartTask(task_name: string) {
     });
 
     const [isStarted, setIsStarted] = useState(false);
+
+    useEffect(() => {
+        const reset_call_state = () => {
+            called_ref.current = false;
+        };
+
+        window.addEventListener("load", reset_call_state);
+
+        return () => {
+            window.removeEventListener("load", reset_call_state);
+        };
+    }, []);
 
     const task_events = useMemo(() => {
         const listeners = listeners_ref.current;
@@ -98,6 +110,25 @@ function useStartTask(task_name: string) {
     const events_handler = useMemo(() => {
         const listeners = listeners_ref.current;
 
+        const msg_default_obj = {
+            event_name: event_name_ref.current,
+            task_id: task_id_ref.current,
+            args: {} as any,
+            msg_type: "task",
+            action: "task_msg",
+        };
+
+        const get_msg_obj = (
+            fields: Partial<typeof msg_default_obj> & {
+                [key: string]: unknown;
+            },
+        ) => ({
+            ...msg_default_obj,
+            ...fields,
+        });
+
+        get_msg_obj({});
+
         return {
             add_message_listener(callback: (e: any) => void, id: string) {
                 if (
@@ -122,49 +153,47 @@ function useStartTask(task_name: string) {
 
             send_msg: (args: any) => {
                 (window as any).ipc.postMessage(
-                    JSON.stringify({
-                        event_name: event_name_ref.current,
-                        task_id: task_id_ref.current,
-                        args: { sender: "listener", data: args },
-                        msg_type: "task",
-                        action: "task_msg",
-                    }),
+                    JSON.stringify(
+                        get_msg_obj({
+                            args: { sender: "listener", data: args },
+                        }),
+                    ),
                 );
             },
 
             pause: () => {
                 (window as any).ipc.postMessage(
-                    JSON.stringify({
-                        event_name: event_name_ref.current,
-                        task_id: task_id_ref.current,
-                        args: { sender: "manager", data: { state: "pause" } },
-                        msg_type: "task",
-                        action: "task_msg",
-                    }),
+                    JSON.stringify(
+                        get_msg_obj({
+                            args: {
+                                sender: "manager",
+                                data: { state: "pause" },
+                            },
+                        }),
+                    ),
                 );
             },
 
             resume: () => {
                 (window as any).ipc.postMessage(
-                    JSON.stringify({
-                        event_name: event_name_ref.current,
-                        task_id: task_id_ref.current,
-                        args: { sender: "manager", data: { state: "run" } },
-                        msg_type: "task",
-                        action: "task_msg",
-                    }),
+                    JSON.stringify(
+                        get_msg_obj({
+                            args: { sender: "manager", data: { state: "run" } },
+                        }),
+                    ),
                 );
             },
 
             cancel() {
                 (window as any).ipc.postMessage(
-                    JSON.stringify({
-                        event_name: event_name_ref.current,
-                        task_id: task_id_ref.current,
-                        args: { sender: "manager", data: { state: "cancel" } },
-                        msg_type: "task",
-                        action: "task_msg",
-                    }),
+                    JSON.stringify(
+                        get_msg_obj({
+                            args: {
+                                sender: "manager",
+                                data: { state: "cancel" },
+                            },
+                        }),
+                    ),
                 );
 
                 task_events.remove_on_message();
