@@ -5,7 +5,7 @@ import { parseJson } from "../utils";
 type ListenerCallback = { callback: (e: any) => void; id: string };
 
 function useStartTask(task_name: string) {
-    let called_ref = useRef(false);
+    // let called_ref = useRef(false);
 
     const task_id_ref = useRef(crypto.randomUUID());
     let event_name_ref = useRef(`${task_name}_${task_id_ref.current}`);
@@ -22,17 +22,17 @@ function useStartTask(task_name: string) {
 
     const [isStarted, setIsStarted] = useState(false);
 
-    useEffect(() => {
-        const reset_call_state = () => {
-            called_ref.current = false;
-        };
+    // useEffect(() => {
+    //     const reset_call_state = () => {
+    //         called_ref.current = false;
+    //     };
 
-        window.addEventListener("load", reset_call_state);
+    //     window.addEventListener("load", reset_call_state);
 
-        return () => {
-            window.removeEventListener("load", reset_call_state);
-        };
-    }, []);
+    //     return () => {
+    //         window.removeEventListener("load", reset_call_state);
+    //     };
+    // }, []);
 
     const task_events = useMemo(() => {
         const listeners = listeners_ref.current;
@@ -82,8 +82,8 @@ function useStartTask(task_name: string) {
     }, []);
 
     const start_task = useCallback(async (args: any) => {
-        if (called_ref.current) return;
-        called_ref.current = true;
+        // if (called_ref.current) return;
+        // called_ref.current = true;
 
         task_events.add_on_message();
         task_events.add_on_exit();
@@ -201,7 +201,7 @@ function useStartTask(task_name: string) {
                 //So we will remove exit listener when exit message arrives
                 //task_events.remove_on_exit();
 
-                called_ref.current = false;
+                // called_ref.current = false;
                 setIsStarted(false);
             },
 

@@ -16,27 +16,34 @@ function App() {
 
     useEffect(() => {
         (async () => {
-            console.log("ss");
+            try {
+                console.log("ss");
 
-            const res = await invoke_command<{ name: string }>("log_struct", {
-                name: "Data from frontend invoke",
-            });
-            console.log({ res, name: res?.name });
+                const res = await invoke_command<{ name: string }>(
+                    "log_struct",
+                    {
+                        name: "Data from frontend invoke",
+                    },
+                );
+                console.log({ res, name: res?.name });
 
-            await start_task("hello");
+                await start_task("hello");
 
-            events_handler.add_message_listener((e) => {
-                console.log(e);
-            }, "1");
+                events_handler.add_message_listener((e) => {
+                    console.log(e);
+                }, "1");
 
-            events_handler.add_exit_listener((e) => {
-                console.log(e);
-            }, "1");
+                events_handler.add_exit_listener((e) => {
+                    console.log(e);
+                }, "1");
 
-            events_handler.send_msg({
-                msg: "from frontend listener",
-                path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
-            });
+                events_handler.send_msg({
+                    msg: "from frontend listener",
+                    path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
+                });
+            } catch (error: any) {
+                console.log(error.message);
+            }
         })();
 
         return () => {
