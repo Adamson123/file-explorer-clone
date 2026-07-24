@@ -20,10 +20,10 @@ macro_rules! repeat_while {
         let mut $var = 0;
 
         while $condition {
-            match $a.get_task_state() {
+            match $a.get_task_state().await {
             TaskHandle::Run => {}
             TaskHandle::Pause => {
-                sleep(Duration::from_millis(1)).await;
+              //  sleep(Duration::from_millis(1)).await;
                 continue;
             }
             TaskHandle::Cancel => break,
@@ -92,7 +92,7 @@ task!(monitor_dir, |a| {
     let mut j = 0;
 
     repeat_while!(j < 100, a, |_i| {
-        let x = a.recv_listener_msg();
+        let x = a.recv_listener_msg().await;
 
         if x.is_some() {
             println!("Got this: {}", x.clone().unwrap());

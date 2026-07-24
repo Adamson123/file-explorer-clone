@@ -46,10 +46,17 @@ pub struct TaskArgs {
 }
 
 impl TaskArgs {
-    pub fn get_msg(&mut self) {
-        let msg: Option<TaskMsg> = match self.reciever.try_recv() {
-            Ok(m) => Some(m),
-            Err(_e) => None,
+    pub async fn get_msg(&mut self) {
+        //Reason for this is that if the task is paused, we want to wait for a message to come in, but if the task is running, we want to check if there is a message available and if not, continue on with the task.
+        let msg: Option<TaskMsg> = match self.task_handle {
+            TaskHandle::Pause => match self.reciever.recv().await {
+                Some(m) => Some(m),
+                None => None,
+            },
+            _ => match self.reciever.try_recv() {
+                Ok(m) => Some(m),
+                Err(_e) => None,
+            },
         };
 
         if msg.is_none() {
@@ -58,17 +65,17 @@ impl TaskArgs {
             //  println!("Try Rec got: {:#?}", msg.clone().unwrap());
             match msg.clone().unwrap().sender {
                 MsgSender::Listener => {
-                    self.listener_buffer.push_back(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
+                    self.listener_buffer.push_back(msg.clone().unwrap().data);
                 }
                 MsgSender::Manager => {
-                    self.manager_buffer.push_back(msg.clone().unwrap().data); //= Some(msg.clone().unwrap().data);
+                    self.manager_buffer.push_back(msg.clone().unwrap().data);
                 }
             }
         }
     }
 
-    pub fn recv_listener_msg(&mut self) -> Option<Value> {
-        self.get_msg();
+    pub async fn recv_listener_msg(&mut self) -> Option<Value> {
+        self.get_msg().await;
 
         if !self.listener_buffer.is_empty() {
             self.listener_last_read = Some(self.listener_buffer.pop_front().unwrap());
@@ -78,8 +85,8 @@ impl TaskArgs {
         None
     }
 
-    fn recv_manager_msg(&mut self) -> Option<Value> {
-        self.get_msg();
+    async fn recv_manager_msg(&mut self) -> Option<Value> {
+        self.get_msg().await;
 
         if !self.manager_buffer.is_empty() {
             // return Some(self.manager_buffer.remove(0));
@@ -89,8 +96,8 @@ impl TaskArgs {
         None
     }
 
-    pub fn get_task_state(&mut self) -> TaskHandle {
-        let msg = self.recv_manager_msg();
+    pub async fn get_task_state(&mut self) -> TaskHandle {
+        let msg = self.recv_manager_msg().await;
 
         if msg.is_none() {
             return self.task_handle.clone();
