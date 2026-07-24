@@ -40,17 +40,35 @@ impl TaskManager {
 
                 println!("{event_name} exited...");
             }
+
             Err(e) => {
-                let js_event =
+                if e.is_panic() {
+                    println!("{event_name} panicked...");
+                    //Remove task from active tasks
+                    globals
+                        .tasks_manager
+                        .lock()
+                        .await
+                        .active_tasks
+                        .remove(&event_name.to_string());
+                }
+
+                let error_js_event =
                     construct_js_event(&format!("{}_error", event_name), &json!(e.to_string()));
                 let exit_js_event =
                     construct_js_event(&format!("{}_exit", event_name), &json!(e.to_string()));
 
-                let combine = format!("{js_event};{exit_js_event}");
+                let js_event = if e.is_cancelled() {
+                    //Exit
+                    exit_js_event
+                } else {
+                    //Combine error and exit events
+                    format!("{}{}", error_js_event, exit_js_event)
+                };
 
                 let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                     window_key.to_string(),
-                    WebviewEvent::EvaluateScript(combine),
+                    WebviewEvent::EvaluateScript(js_event),
                 ));
 
                 //Remove task from active tasks
