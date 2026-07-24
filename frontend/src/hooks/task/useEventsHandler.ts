@@ -1,112 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import IPCHandler from "../lib/ipc_handler";
-import { parseJson } from "../utils";
+import { useMemo } from "react";
+import type { ListenersRef } from "./useStartTask";
+import type useTaskEvents from "./useTaskEvents";
 
-type ListenerCallback = { callback: (e: any) => void; id: string };
-
-function useStartTask(task_name: string) {
-    // let called_ref = useRef(false);
-
-    const task_id_ref = useRef(crypto.randomUUID());
-    let event_name_ref = useRef(`${task_name}_${task_id_ref.current}`);
-
-    const listeners_ref = useRef<{
-        message_listeners: ListenerCallback[];
-        exit_listeners: ListenerCallback[];
-        error_listeners: ListenerCallback[];
-    }>({
-        message_listeners: [],
-        exit_listeners: [],
-        error_listeners: [],
-    });
-
-    const [isStarted, setIsStarted] = useState(false);
-
-    // useEffect(() => {
-    //     const reset_call_state = () => {
-    //         called_ref.current = false;
-    //     };
-
-    //     window.addEventListener("load", reset_call_state);
-
-    //     return () => {
-    //         window.removeEventListener("load", reset_call_state);
-    //     };
-    // }, []);
-
-    const task_events = useMemo(() => {
-        const listeners = listeners_ref.current;
-
-        const on_message_func = (e: any) => {
-            if (listeners.message_listeners.length) {
-                listeners.message_listeners.forEach((f) =>
-                    f.callback(parseJson(e.detail)),
-                );
-            }
-        };
-
-        const on_exit_func = (e: any) => {
-            if (listeners.exit_listeners.length) {
-                listeners.exit_listeners.forEach((f) =>
-                    f.callback(parseJson(e.detail)),
-                );
-            }
-            task_events.remove_on_exit();
-        };
-
-        return {
-            add_on_message() {
-                document.addEventListener(
-                    event_name_ref.current,
-                    on_message_func,
-                );
-            },
-
-            add_on_exit() {
-                let event_name_exit = event_name_ref.current + "_exit";
-                document.addEventListener(event_name_exit, on_exit_func);
-            },
-
-            remove_on_message() {
-                document.removeEventListener(
-                    event_name_ref.current,
-                    on_message_func,
-                );
-            },
-
-            remove_on_exit() {
-                let event_name_exit = event_name_ref.current + "_exit";
-                document.removeEventListener(event_name_exit, on_exit_func);
-            },
-        };
-    }, []);
-
-    const start_task = useCallback(async (args: any) => {
-        // if (called_ref.current) return;
-        // called_ref.current = true;
-
-        task_events.add_on_message();
-        task_events.add_on_exit();
-
-        //Send task_name, task_id to rust backend -> rust backend combines task_name + task_id to form event_name, this is the only time we will send task_name
-        const start_msg = await new Promise((res, rej) => {
-            const id = IPCHandler.addPromise(res, rej);
-            (window as any).ipc.postMessage(
-                JSON.stringify({
-                    task_name,
-                    task_id: task_id_ref.current,
-                    args: { sender: "listener", data: args },
-                    id,
-                    msg_type: "task",
-                    action: "start",
-                }),
-            );
-        });
-
-        setIsStarted(true);
-        return start_msg;
-    }, []);
-
+function useEventsHandler(
+    listeners_ref: ListenersRef,
+    event_name_ref: React.RefObject<string>,
+    task_id_ref: React.RefObject<string>,
+    task_events: ReturnType<typeof useTaskEvents>,
+    setIsStarted: React.Dispatch<React.SetStateAction<boolean>>,
+) {
     const events_handler = useMemo(() => {
         const listeners = listeners_ref.current;
 
@@ -140,15 +42,20 @@ function useStartTask(task_name: string) {
                 listeners.message_listeners.push({ id, callback });
             },
 
-            add_exit_listener(
-                callback: (e: any) => void,
-                id: string = crypto.randomUUID(),
-            ) {
+            add_exit_listener(callback: (e: any) => void, id: string) {
                 if (listeners.exit_listeners.map((c) => c?.id).includes(id)) {
                     return;
                 }
 
                 listeners.exit_listeners.push({ id, callback });
+            },
+
+            add_error_listener(callback: (e: any) => void, id: string) {
+                if (listeners.error_listeners.map((c) => c?.id).includes(id)) {
+                    return;
+                }
+
+                listeners.error_listeners.push({ id, callback });
             },
 
             send_msg: (args: any) => {
@@ -197,6 +104,7 @@ function useStartTask(task_name: string) {
                 );
 
                 task_events.remove_on_message();
+                //  task_events.remove_on_error();
                 //Removing exit listener immediately task is stopped, will make exit listener miss task exit message
                 //So we will remove exit listener when exit message arrives
                 //task_events.remove_on_exit();
@@ -227,7 +135,7 @@ function useStartTask(task_name: string) {
         };
     }, []);
 
-    return { events_handler, start_task, isStarted };
+    return events_handler;
 }
 
-export default useStartTask;
+export default useEventsHandler;

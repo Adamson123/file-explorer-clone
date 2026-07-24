@@ -57,6 +57,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             //let task_id = get_field_as_string(body, "task_id");
             let args = body.get("args").cloned();
             let globals = globals.clone();
+            let window_key = window_key.to_string();
 
             async move {
                 let def = json!({});
@@ -67,7 +68,16 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 if let Some(s) = sender {
                     s.await;
                 } else {
-                    //TODO
+                    let js_event = construct_js_event(
+                        &format!("{}_error", event_name),
+                        &json!({"error": "Event not found"}),
+                    );
+
+                    let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                        window_key.to_string(),
+                        WebviewEvent::EvaluateScript(js_event),
+                    ));
+
                     println!("Event not found: {event_name}")
                 }
             }

@@ -5,7 +5,7 @@ import heroImg from "./assets/hero.png";
 import "./index.css";
 import "./App.css";
 import invoke_command from "./lib/invoke_command";
-import useStartTask from "./hooks/useStartTask";
+import useStartTask from "./hooks/task/useStartTask";
 //import start_task from "./lib/start_task";
 
 function App() {
@@ -35,6 +35,10 @@ function App() {
 
                 events_handler.add_exit_listener((e) => {
                     console.log(e);
+                }, "1");
+
+                events_handler.add_error_listener((e) => {
+                    console.log("Error: ", e);
                 }, "1");
 
                 events_handler.send_msg({
