@@ -109,7 +109,16 @@ function useEventsHandler(
                 // called_ref.current = false;
                 setIsStarted(false);
             },
-
+            //TODO: Force kill task in rust backend, currently cancel is just a message to rust backend to cancel the task, but if the task is stuck in a loop or waiting for something, it will not be cancelled, we need to force cancel the task in rust backend, so we need to send a message to rust backend to force cancel the task, and rust backend will abort the task
+            force_cancel() {
+                (window as any).ipc.postMessage(
+                    JSON.stringify(
+                        get_msg_obj({
+                            action: "force_kill",
+                        }),
+                    ),
+                );
+            },
             remove_message_listener(id: string) {
                 let message_listeners = listeners_ref.current.message_listeners;
                 message_listeners = message_listeners.filter(

@@ -70,6 +70,16 @@ impl TaskManager {
         }
     }
 
+    pub fn end_task(&mut self, event_name: &str) -> Result<String, String> {
+        if let Some(active_task) = self.active_tasks.remove(event_name) {
+            active_task.abort_handle.abort();
+            println!("Ended task with key : {event_name}");
+            return Ok(String::from("Task ended successfully"));
+        }
+
+        Err(String::from("Task not found"))
+    }
+
     pub fn end_window_tasks(&mut self, window_key: &str) {
         if !self.active_tasks.is_empty() {
             self.active_tasks.retain(|k, value| {

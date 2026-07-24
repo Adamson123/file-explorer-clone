@@ -22,7 +22,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let globals = globals.clone();
 
             async move {
-                let event_name = globals.tasks_manager.lock().await.start_task(
+                let event_name = { globals.tasks_manager.lock().await }.start_task(
                     &task_name,
                     &task_id,
                     &window_key,
@@ -52,9 +52,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
     //Msg
     if action == "task_msg" {
         tokio::task::spawn({
-            //TODO: Use event_name + _error to determine frontend task error eventlistener
             let event_name = get_field_as_string(body, "event_name");
-            //let task_id = get_field_as_string(body, "task_id");
             let args = body.get("args").cloned();
             let globals = globals.clone();
             let window_key = window_key.to_string();
@@ -77,9 +75,39 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                         window_key.to_string(),
                         WebviewEvent::EvaluateScript(js_event),
                     ));
-
-                    println!("Event not found: {event_name}")
+                    //   println!("Event not found: {event_name}")
                 }
+            }
+        });
+        return;
+    }
+
+    //Force kill task
+    //Reason: If a task is stuck, it will not be able to receive messages from the frontend, so we need to force kill it
+    if action == "force_kill" {
+        println!(
+            "Force kill task with event_name: {}",
+            get_field_as_string(body, "event_name")
+        );
+        tokio::task::spawn({
+            let event_name = get_field_as_string(body, "event_name");
+            let globals = globals.clone();
+            let window_key = window_key.to_string();
+
+            async move {
+                let mut tasks_manager = { globals.tasks_manager.lock().await };
+                let res = tasks_manager.end_task(&event_name);
+                if let Err(e) = res {
+                    let js_event =
+                        construct_js_event(&format!("{}_error", event_name), &json!({"error": e}));
+
+                    let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                        window_key.to_string(),
+                        WebviewEvent::EvaluateScript(js_event),
+                    ));
+                }
+
+                println!("Task killed: {event_name}");
             }
         });
         return;

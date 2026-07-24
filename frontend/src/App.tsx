@@ -190,6 +190,16 @@ function App() {
                     type="button"
                     className="counter"
                     onClick={() => {
+                        events_handler.force_cancel();
+                    }}
+                >
+                    Force cancel
+                </button>
+
+                <button
+                    type="button"
+                    className="counter"
+                    onClick={() => {
                         start_task({
                             path: "C:\\Users\\Admin\\Downloads\\youtube-analysis\\requests",
                         }).then(() => {

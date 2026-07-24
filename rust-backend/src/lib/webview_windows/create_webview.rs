@@ -20,6 +20,7 @@ pub fn create_webview(
         None => Arc::new(move |_msg| {}),
     };
 
+    //TODO: Handle errors in webview creation
     let webview = WebViewBuilder::new()
         .with_url(url)
         .with_ipc_handler(move |msg| {

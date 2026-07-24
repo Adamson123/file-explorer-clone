@@ -6,6 +6,7 @@ use tao::{
 use crate::user_events::UserEvent;
 
 pub fn create_window(window_name: &str, event_loop: &EventLoopWindowTarget<UserEvent>) -> Window {
+    //TODO: Handle errors in window creation
     let window = WindowBuilder::new()
         .with_title(window_name)
         .build(event_loop)
