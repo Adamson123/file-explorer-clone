@@ -18,7 +18,6 @@ macro_rules! repeat_while {
     ) => {
 
         let mut $var = 0;
-
         while $condition {
             match $a.get_task_state().await {
             TaskHandle::Run => {}
@@ -44,10 +43,10 @@ macro_rules! _repeat_for {
     ) => {
         let mut $var = 0;
         while $var < $count {
-            match $a.get_task_state() {
+            match $a.get_task_state().await {
             TaskHandle::Run => {}
             TaskHandle::Pause => {
-                sleep(Duration::from_millis(1)).await;
+              //  sleep(Duration::from_millis(1)).await;
                 continue;
             }
             TaskHandle::Cancel => break,
