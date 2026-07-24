@@ -23,7 +23,10 @@ function useTaskEvents(
                     f.callback(parseJson(e.detail)),
                 );
             }
+
             task_events.remove_on_exit();
+            task_events.remove_on_message();
+            task_events.remove_on_error();
         };
 
         const on_error_func = (e: any) => {

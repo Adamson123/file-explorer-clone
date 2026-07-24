@@ -29,8 +29,6 @@ function useEventsHandler(
             ...fields,
         });
 
-        get_msg_obj({});
-
         return {
             add_message_listener(callback: (e: any) => void, id: string) {
                 if (
@@ -103,7 +101,6 @@ function useEventsHandler(
                     ),
                 );
 
-                task_events.remove_on_message();
                 //  task_events.remove_on_error();
                 //Removing exit listener immediately task is stopped, will make exit listener miss task exit message
                 //So we will remove exit listener when exit message arrives

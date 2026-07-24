@@ -38,7 +38,7 @@ function App() {
                 }, "1");
 
                 events_handler.add_error_listener((e) => {
-                    console.log("Error: ", e);
+                    console.error("Error: ", e);
                 }, "1");
 
                 events_handler.send_msg({

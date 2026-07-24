@@ -63,34 +63,7 @@ impl TaskManager {
 
         //Start task
         let task = task.unwrap().clone();
-        let handle = tokio::task::spawn({
-            // let window_key = window_key.to_string();
-            //let task_id = task_id.to_string();
-            // let globals = globals.clone();
-            //let event_name = event_name.clone();
-
-            async move {
-                //  sleep(Duration::from_secs_f64(1.5)).await;
-                let result = task(task_args).await.unwrap_or("".into());
-
-                // let js_event =
-                //     construct_js_event(&format!("{}_exit", event_name), &json!(exit_msg));
-
-                // let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                //     window_key.to_string(),
-                //     WebviewEvent::EvaluateScript(js_event),
-                // ));
-
-                // globals
-                //     .tasks_manager
-                //     .lock()
-                //     .await
-                //     .active_tasks
-                //     .remove(&event_name);
-
-                return result;
-            }
-        });
+        let handle = tokio::task::spawn(async move { task(task_args).await.unwrap_or("".into()) });
 
         let handle = Arc::new(Mutex::new(Some(handle)));
 
@@ -114,10 +87,8 @@ impl TaskManager {
 
                 match handle.unwrap().await {
                     Ok(m) => {
-                        let js_event = construct_js_event(
-                            &format!("{}_exit", event_name),
-                            &json!({ "status": "ok" ,"message": m}),
-                        );
+                        let js_event =
+                            construct_js_event(&format!("{}_exit", event_name), &json!(m));
 
                         let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                             window_key.to_string(),
@@ -136,14 +107,30 @@ impl TaskManager {
                     }
                     Err(e) => {
                         let js_event = construct_js_event(
-                            &format!("{}_exit", event_name),
-                            &json!({ "status": "error", "error": e.to_string() }),
+                            &format!("{}_error", event_name),
+                            &json!(e.to_string()),
                         );
+                        let exit_js_event = construct_js_event(
+                            &format!("{}_exit", event_name),
+                            &json!(e.to_string()),
+                        );
+
+                        let combine = format!("{js_event};{exit_js_event}");
 
                         let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                             window_key.to_string(),
-                            WebviewEvent::EvaluateScript(js_event),
+                            WebviewEvent::EvaluateScript(combine),
                         ));
+
+                        //Remove task from active tasks
+                        globals
+                            .tasks_manager
+                            .lock()
+                            .await
+                            .active_tasks
+                            .remove(&event_name);
+
+                        println!("{event_name} exited with error");
                     }
                 }
                 println!("Task handle spawn ended for {event_name}...");
@@ -159,17 +146,6 @@ impl TaskManager {
             },
         );
 
-        // if let Some(task) = active_task {
-
-        // } else {
-        //     println!("No active task handle found for {event_name}...❌");
-        // }
-        //Send handle events message to frontend
-        /*
-         let active_task = self.active_tasks.get(&event_name);
-
-                let task = task.clone();
-        */
         println!("{event_name} started...");
         Ok(String::from(event_name))
     }
