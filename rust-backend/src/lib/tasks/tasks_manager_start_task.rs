@@ -106,7 +106,7 @@ impl TaskManager {
                         println!("{event_name} exited...");
                     }
                     Err(e) => {
-                        let js_event = construct_js_event(
+                        let error_js_event = construct_js_event(
                             &format!("{}_error", event_name),
                             &json!(e.to_string()),
                         );
@@ -115,11 +115,11 @@ impl TaskManager {
                             &json!(e.to_string()),
                         );
 
-                        let combine = format!("{js_event};{exit_js_event}");
+                        let js_events = format!("{error_js_event};{exit_js_event}");
 
                         let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                             window_key.to_string(),
-                            WebviewEvent::EvaluateScript(combine),
+                            WebviewEvent::EvaluateScript(js_events),
                         ));
 
                         //Remove task from active tasks
