@@ -92,7 +92,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             async move {
                 println!("kill all tasks with window_key: {window_key}");
                 let mut tasks_manager = { globals.tasks_manager.lock().await };
-                tasks_manager.end_window_tasks(&window_key).await;
+                tasks_manager.end_window_tasks(&window_key)
             }
         });
         return;

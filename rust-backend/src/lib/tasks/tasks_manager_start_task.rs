@@ -1,9 +1,9 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use serde_json::{json, Value};
-use tokio::sync::{
-    mpsc::{channel, Receiver, Sender},
-    Mutex,
+use tokio::{
+    sync::mpsc::{channel, Receiver, Sender},
+    task::JoinHandle,
 };
 
 use crate::{
@@ -15,6 +15,58 @@ use crate::{
 };
 
 impl TaskManager {
+    pub async fn use_task_handle(
+        handle: JoinHandle<String>,
+        globals: Arc<Globals>,
+        window_key: &str,
+        event_name: &str,
+    ) {
+        match handle.await {
+            Ok(m) => {
+                let js_event = construct_js_event(&format!("{}_exit", event_name), &json!(m));
+
+                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                    window_key.to_string(),
+                    WebviewEvent::EvaluateScript(js_event),
+                ));
+
+                //Remove task from active tasks
+                globals
+                    .tasks_manager
+                    .lock()
+                    .await
+                    .active_tasks
+                    .remove(&event_name.to_string());
+
+                println!("{event_name} exited...");
+            }
+            Err(e) => {
+                let js_event =
+                    construct_js_event(&format!("{}_error", event_name), &json!(e.to_string()));
+                let exit_js_event =
+                    construct_js_event(&format!("{}_exit", event_name), &json!(e.to_string()));
+
+                let combine = format!("{js_event};{exit_js_event}");
+
+                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                    window_key.to_string(),
+                    WebviewEvent::EvaluateScript(combine),
+                ));
+
+                //Remove task from active tasks
+                globals
+                    .tasks_manager
+                    .lock()
+                    .await
+                    .active_tasks
+                    .remove(&event_name.to_string());
+
+                println!("{event_name} exited with error");
+            }
+        }
+        println!("Task handle spawn ended for {event_name}...");
+    }
+
     pub fn start_task(
         &mut self,
         task_name: &str,
@@ -64,83 +116,20 @@ impl TaskManager {
         //Start task
         let task = task.unwrap().clone();
         let handle = tokio::task::spawn(async move { task(task_args).await.unwrap_or("".into()) });
-
-        let handle = Arc::new(Mutex::new(Some(handle)));
-
+        let abort_handle = handle.abort_handle();
         tokio::task::spawn({
-            println!("Task handle spawned for {event_name}...");
-            let window_key = window_key.to_string();
-            let globals = globals.clone();
             let event_name = event_name.clone();
-            let handle = handle.clone();
+            let window_key = window_key.to_string();
 
             async move {
-                let handle = {
-                    let mut guard = handle.lock().await;
-                    guard.take()
-                };
-
-                if handle.is_none() {
-                    println!("Task handle is none for {event_name}...");
-                    return;
-                }
-
-                match handle.unwrap().await {
-                    Ok(m) => {
-                        let js_event =
-                            construct_js_event(&format!("{}_exit", event_name), &json!(m));
-
-                        let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                            window_key.to_string(),
-                            WebviewEvent::EvaluateScript(js_event),
-                        ));
-
-                        //Remove task from active tasks
-                        globals
-                            .tasks_manager
-                            .lock()
-                            .await
-                            .active_tasks
-                            .remove(&event_name);
-
-                        println!("{event_name} exited...");
-                    }
-                    Err(e) => {
-                        let js_event = construct_js_event(
-                            &format!("{}_error", event_name),
-                            &json!(e.to_string()),
-                        );
-                        let exit_js_event = construct_js_event(
-                            &format!("{}_exit", event_name),
-                            &json!(e.to_string()),
-                        );
-
-                        let combine = format!("{js_event};{exit_js_event}");
-
-                        let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                            window_key.to_string(),
-                            WebviewEvent::EvaluateScript(combine),
-                        ));
-
-                        //Remove task from active tasks
-                        globals
-                            .tasks_manager
-                            .lock()
-                            .await
-                            .active_tasks
-                            .remove(&event_name);
-
-                        println!("{event_name} exited with error");
-                    }
-                }
-                println!("Task handle spawn ended for {event_name}...");
+                TaskManager::use_task_handle(handle, globals, &window_key, &event_name).await;
             }
         });
 
         self.active_tasks.insert(
             event_name.clone(),
             ActiveTask {
-                handle: handle,
+                abort_handle,
                 sender: tx,
                 window_key: window_key.to_string(),
             },

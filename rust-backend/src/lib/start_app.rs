@@ -77,11 +77,7 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
 
                         let task_manager = globals_clone_2.clone().tasks_manager.clone();
                         tokio::task::spawn(async move {
-                            task_manager
-                                .lock()
-                                .await
-                                .end_multiple_window_tasks(&keys)
-                                .await;
+                            task_manager.lock().await.end_multiple_window_tasks(&keys)
                         });
                     }
                 }

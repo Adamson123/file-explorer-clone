@@ -1,10 +1,7 @@
 use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use serde_json::{json, Value};
-use tokio::{
-    sync::{mpsc::Sender, Mutex},
-    task::JoinHandle,
-};
+use tokio::{sync::mpsc::Sender, task::AbortHandle};
 
 use crate::{
     task_args::{MsgSender, TaskArgs, TaskMsg},
@@ -19,9 +16,8 @@ pub struct Task {
     pub function: TaskFnType,
 }
 
-pub type TaskHandle = Arc<Mutex<Option<JoinHandle<String>>>>;
 pub struct ActiveTask {
-    pub handle: TaskHandle,
+    pub abort_handle: AbortHandle,
     pub sender: Sender<TaskMsg>,
     pub window_key: String,
 }
@@ -74,47 +70,31 @@ impl TaskManager {
         }
     }
 
-    pub async fn end_window_tasks(&mut self, window_key: &str) {
+    pub fn end_window_tasks(&mut self, window_key: &str) {
         if !self.active_tasks.is_empty() {
-            let mut handles: Vec<Arc<Mutex<Option<JoinHandle<String>>>>> = Vec::new();
             self.active_tasks.retain(|k, value| {
                 if value.window_key != window_key {
                     return true;
                 } else {
+                    value.abort_handle.abort();
                     println!("Ended task with key : {k}");
-                    handles.push(value.handle.clone());
                     return false;
                 }
             });
-
-            for handle in handles {
-                let handle = handle.lock().await.take();
-                if let Some(h) = handle {
-                    h.abort();
-                }
-            }
         }
     }
 
-    pub async fn end_multiple_window_tasks(&mut self, windows_key: &Vec<String>) {
+    pub fn end_multiple_window_tasks(&mut self, windows_key: &Vec<String>) {
         if !self.active_tasks.is_empty() {
-            let mut handles: Vec<Arc<Mutex<Option<JoinHandle<String>>>>> = Vec::new();
             self.active_tasks.retain(|k, value| {
                 if !windows_key.contains(&value.window_key) {
                     return true;
                 } else {
-                    println!("Ended task with key : {k}",);
-                    handles.push(value.handle.clone());
+                    value.abort_handle.abort();
+                    println!("Ended task with key : {k}");
                     return false;
                 }
             });
-
-            for handle in handles {
-                let handle = handle.lock().await.take();
-                if let Some(h) = handle {
-                    h.abort();
-                }
-            }
         }
     }
 }
