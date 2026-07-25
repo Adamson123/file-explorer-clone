@@ -80,7 +80,7 @@ macro_rules! command_struct {
 
             Command {
                 name,
-                function: Arc::new(Box::new(fnt)),
+                function: Arc::new(fnt),
             }
         }
     };

@@ -5,7 +5,7 @@ use crate::globals::Globals;
 
 pub type BoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send>>;
 pub type CommandFnType =
-    Arc<Box<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> BoxFuture<'a> + Send + Sync>>;
+    Arc<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> BoxFuture<'a> + Send + Sync>;
 
 pub struct Command {
     pub name: String,

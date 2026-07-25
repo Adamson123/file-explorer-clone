@@ -15,6 +15,7 @@ pub struct NewWindowConfig {
     pub url: String,
 }
 
+//TODO: Maybe add Option<tokio::sync::mpsc::Sender> to some event to send back results of their execution
 pub enum UserEvent {
     IPCMessage(String, Request<String>),
     CreateNewWindow(NewWindowConfig),

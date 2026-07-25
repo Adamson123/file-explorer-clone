@@ -33,12 +33,20 @@ pub struct WebViewWindowManager {
 }
 
 impl WebViewWindowManager {
-    pub fn add_webview_window(&mut self, webview_window_config: &WebViewWindowConfig) -> String {
+    pub fn add_webview_window(
+        &mut self,
+        webview_window_config: &WebViewWindowConfig,
+    ) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
         let window = create_window(
             &webview_window_config.window_name,
             &webview_window_config.event_loop,
         );
+
+        if let Err(e) = window {
+            return Err(format!("Failed to create window: {}", e));
+        }
+        let window = window.unwrap();
 
         let webview = create_webview(
             &window,
@@ -47,6 +55,11 @@ impl WebViewWindowManager {
             webview_window_config.ipc_handler.clone(),
             &webview_window_config.url,
         );
+
+        if let Err(e) = webview {
+            return Err(format!("Failed to create webview: {}", e));
+        }
+        let webview = webview.unwrap();
 
         self.webview_windows.insert(
             id.clone(),
@@ -57,7 +70,7 @@ impl WebViewWindowManager {
             },
         );
 
-        id
+        Ok(id)
     }
 
     pub fn get_webview_window(&self, key: &str) -> Option<&WebViewWindow> {

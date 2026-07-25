@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub type TaskBoxFuture = Pin<Box<dyn Future<Output = Result<String, String>> + Send>>;
-pub type TaskFnType = Arc<Box<dyn Fn(TaskArgs) -> TaskBoxFuture + Send + Sync>>;
+pub type TaskFnType = Arc<dyn Fn(TaskArgs) -> TaskBoxFuture + Send + Sync>;
 
 pub struct Task {
     pub name: String,

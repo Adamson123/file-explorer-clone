@@ -76,7 +76,7 @@ macro_rules! task {
 
             Task {
                 name: stringify!($name).to_string(),
-                function: Arc::new(Box::new(fnt)),
+                function: Arc::new(fnt),
             }
         }
     };

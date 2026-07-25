@@ -36,6 +36,13 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
 
     let main_window_key = webview_windows_manager.add_webview_window(&main_window_config);
 
+    if let Err(e) = main_window_key {
+        eprintln!("Failed to create main window: {}", e);
+        return;
+    }
+
+    let main_window_key = main_window_key.unwrap();
+
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {
             *control_flow = tao::event_loop::ControlFlow::Wait;

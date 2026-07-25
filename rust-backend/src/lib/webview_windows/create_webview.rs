@@ -12,7 +12,7 @@ pub fn create_webview(
     globals: Arc<Globals>,
     ipc_handler: Option<IPCHandler>,
     url: &str,
-) -> WebView {
+) -> Result<WebView, String> {
     let window_key = window_key.to_string();
 
     let ipc_handler_closure = match ipc_handler {
@@ -39,8 +39,10 @@ pub fn create_webview(
 
             ipc_handler_closure(msg);
         })
-        .build(window)
-        .unwrap();
+        .build(window);
 
-    webview
+    match webview {
+        Ok(wv) => Ok(wv),
+        Err(e) => Err(e.to_string()),
+    }
 }

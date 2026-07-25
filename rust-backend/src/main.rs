@@ -22,10 +22,10 @@ async fn main() {
         commands: HashMap::new(),
     };
 
-    commands_register.register("log", Arc::new(Box::new(log)));
-    commands_register.register("minimize_window", Arc::new(Box::new(minimize_window)));
-    commands_register.register("move_window", Arc::new(Box::new(move_window)));
-    commands_register.register("hide_decoration", Arc::new(Box::new(hide_decoration)));
+    commands_register.register("log", Arc::new(log));
+    commands_register.register("minimize_window", Arc::new(minimize_window));
+    commands_register.register("move_window", Arc::new(move_window));
+    commands_register.register("hide_decoration", Arc::new(hide_decoration));
 
     commands_register.register_command(log_struct());
     commands_register.register_command(get_dir_contents());
