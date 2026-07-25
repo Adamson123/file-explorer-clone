@@ -34,28 +34,14 @@ function useStartTask(task_name: string) {
         listeners_ref,
         event_name_ref,
         task_id_ref,
-        // task_events,
         task_name,
         setIsStarted,
     );
-
-    // useEffect(() => {
-    //     const reset_call_state = () => {
-    //         called_ref.current = false;
-    //     };
-
-    //     window.addEventListener("load", reset_call_state);
-
-    //     return () => {
-    //         window.removeEventListener("load", reset_call_state);
-    //     };
-    // }, []);
 
     const start_task = useCallback(async (args: any) => {
         // if (called_ref.current) return;
         // called_ref.current = true;
 
-        console.log("Ignited start");
         task_events.add_on_message();
         task_events.add_on_exit();
         task_events.remove_on_error();
@@ -66,12 +52,6 @@ function useStartTask(task_name: string) {
             const id = IPCHandler.addPromise(res, rej);
             (window as any).ipc.postMessage(
                 JSON.stringify({
-                    // task_name,
-                    // task_id: task_id_ref.current,
-                    // args: { sender: "listener", data: args },
-                    // id,
-                    // msg_type: "task",
-                    // action: "start",
                     msg_type: "task",
                     body: {
                         action: "start",

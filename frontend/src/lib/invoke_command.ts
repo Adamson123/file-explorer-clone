@@ -16,10 +16,6 @@ const invoke_command = async <T = any>(
         const id = IPCHandler.addPromise(res, rej);
         (window as any).ipc.postMessage(
             JSON.stringify({
-                // cmd,
-                // args,
-                // id,
-                // type: "command",
                 msg_type: "command",
                 body: {
                     cmd,

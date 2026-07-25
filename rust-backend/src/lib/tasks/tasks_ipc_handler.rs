@@ -1,20 +1,25 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Error, Value};
 
 use crate::{
     globals::Globals,
     user_events::{UserEvent, WebviewEvent},
-    user_events_handler::TaskIPCMsg,
-    utils::{construct_js_event, get_field_as_string},
+    utils::construct_js_event,
 };
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TaskIPCMsg {
+    pub task_name: String,
+    pub task_id: String,
+    pub event_name: String,
+    pub args: Value,
+    pub id: String,
+    pub action: String, // "start" | "task_msg" | "force_kill" | "kill_all"
+}
+
 pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {
-    // let action = get_field_as_string(body, "action");
-    println!(
-        "tasks_ipc_handler: window_key: {}, body: {:#?}",
-        window_key, body
-    );
     let ipc_msg: Result<TaskIPCMsg, Error> = serde_json::from_value(body.clone());
 
     if ipc_msg.is_err() {
@@ -72,11 +77,9 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let window_key = window_key.to_string();
 
             async move {
-                //let def = json!({});
-                //   let args = args;
                 let tasks_manager = { globals.tasks_manager.lock().await };
-
                 let sender = tasks_manager.send_msg(&event_name, &args);
+
                 if let Some(s) = sender {
                     s.await;
                 } else {
@@ -84,8 +87,6 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                         &format!("{}_error", event_name),
                         &json!({"error": "Event not found"}),
                     );
-
-                    println!("Event not found: {event_name} {js_event}");
 
                     let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                         window_key.to_string(),

@@ -1,15 +1,21 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Error, Value};
 use tao::event_loop::EventLoopProxy;
 
 use crate::{
-    commands_registry::Command,
     globals::Globals,
     user_events::{UserEvent, WebviewEvent},
-    user_events_handler::CommandIPCMsg,
-    utils::{construct_js_event, get_field_as_string},
+    utils::construct_js_event,
 };
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CommandIPCMsg {
+    pub cmd: String,
+    pub args: Value,
+    pub id: String,
+}
 
 pub async fn send_ipc_response(
     proxy: EventLoopProxy<UserEvent>,
@@ -42,13 +48,6 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
         return;
     }
     let ipc_msg = ipc_msg.unwrap();
-
-    // 1. Get the existing "args" as a Map (clone it), or create a new empty Map
-    // let mut args_map = body
-    //     .get("args")
-    //     .and_then(|v| v.as_object()) // gets &Map
-    //     .cloned() // clones it into a new owned Map
-    //     .unwrap_or_else(|| serde_json::Map::new()); // fallback to empty Map
 
     let mut args_map = ipc_msg
         .args

@@ -9,51 +9,6 @@ use crate::utils::get_field_as_string;
 use crate::webview_windows_manager::WebViewWindowSetup;
 use std::sync::Arc;
 
-/*
-TS types for IPC messages
-export type CommandIPCMsg = {
-    cmd: string;
-    args: any;
-    id: string;
-};
-
-export type TaskIPCMsg = {
-    task_name: string;
-    task_id: string;
-    event_name: string;
-    args: any;
-    id: string;
-    action: "start" | "task_msg" | "force_kill" | "kill_all";
-};
-
-export type IPCMsg<T extends CommandIPCMsg | TaskIPCMsg> = {
-    msg_type: "command" | "task";
-    msg: T;
-};
-*/
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct CommandIPCMsg {
-    pub cmd: String,
-    pub args: Value,
-    pub id: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct TaskIPCMsg {
-    pub task_name: String,
-    pub task_id: String,
-    pub event_name: String,
-    pub args: Value,
-    pub id: String,
-    pub action: String, // "start" | "task_msg" | "force_kill" | "kill_all"
-}
-
-// pub struct IPCMsg<T> {
-//     pub msg_type: String, // "command" | "task"
-//     pub msg: T,
-// }
-
 pub fn user_events_handler(
     event: &UserEvent,
     main_thread_states: &mut MainThreadStates,

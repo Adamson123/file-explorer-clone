@@ -13,7 +13,6 @@ const start_task = async (task_name: string, args: any) => {
             }),
         );
     });
-    console.log({ event_name });
 
     const listener = {
         listen: (callback: (d: any) => void) => {
