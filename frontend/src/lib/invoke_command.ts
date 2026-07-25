@@ -4,13 +4,13 @@ type CMD =
     | "minimize_window"
     | "move_window"
     | "hide_decoration"
+    | "create_window"
     | (string & {});
 
 const invoke_command = async <T = any>(
     cmd: CMD,
     args: any = "",
 ): Promise<T | undefined> => {
-    // try {
     const response = await new Promise((res, rej) => {
         const id = IPCHandler.addPromise(res, rej);
         (window as any).ipc.postMessage(

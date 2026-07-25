@@ -20,9 +20,33 @@ pub fn create_webview(
         None => Arc::new(move |_msg| {}),
     };
 
-    //TODO: Handle errors in webview creation
+    const INTIALIZATION_SCRIPT: &str = r#"
+        window.addEventListener("load", () => {
+            console.log("Window fully reloaded");
+            window.ipc.postMessage(
+                JSON.stringify({
+                    msg_type: "task",
+                    action: "kill_all",
+                }),
+            );
+        });
+     
+    document.addEventListener("mousedown",(event)=>{
+        if(event.target.closest(`[move-window="true"]`)){
+          window.ipc.postMessage(
+            JSON.stringify({
+                cmd:"move_window",
+                id:"",
+                type: "command",
+            }),
+        );
+         }
+    });
+    "#;
+
     let webview = WebViewBuilder::new()
         .with_url(url)
+        .with_initialization_script(INTIALIZATION_SCRIPT)
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();
             let window_key = window_key.clone();

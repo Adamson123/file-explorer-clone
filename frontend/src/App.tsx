@@ -106,7 +106,8 @@ function App() {
                     // onMouseUp={() => (mouseDown.current = false)}
                     // onMouseLeave={() => (mouseDown.current = false)}
                     // onMouseMove={move_window}
-                    onMouseDown={move_window}
+                    //onMouseDown={move_window}
+                    move-window="true"
                     style={{
                         background: "red",
                         width: "100%",
