@@ -25,11 +25,17 @@ pub mod commands_registry;
 #[path = "./lib/commands/commands.rs"]
 pub mod commands;
 
+#[path = "./lib/commands/commands_macro.rs"]
+pub mod commands_macro;
+
 #[path = "./lib/tasks/task_args.rs"]
 pub mod task_args;
 
 #[path = "./lib/tasks/tasks.rs"]
 pub mod tasks;
+
+#[path = "./lib/tasks/tasks_macro.rs"]
+pub mod tasks_macro;
 
 #[path = "./lib/tasks/tasks_manager.rs"]
 pub mod tasks_manager;

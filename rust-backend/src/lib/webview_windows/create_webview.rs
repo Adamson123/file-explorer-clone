@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tao::window::Window;
 use wry::{http::Request, WebView, WebViewBuilder};
 
-use crate::{globals::Globals, user_events::UserEvent};
+use crate::{globals::Globals, user_events::UserEvent, webview_windows_manager::WebViewConfig};
 
 pub type IPCHandler = Arc<dyn Fn(Request<String>) + 'static>;
 
@@ -10,13 +10,13 @@ pub fn create_webview(
     window: &Window,
     window_key: &str,
     globals: Arc<Globals>,
-    ipc_handler: Option<IPCHandler>,
-    url: &str,
+    ipc_handler: &Option<IPCHandler>,
+    webview_config: &WebViewConfig,
 ) -> Result<WebView, String> {
     let window_key = window_key.to_string();
 
     let ipc_handler_closure = match ipc_handler {
-        Some(f) => f,
+        Some(f) => f.clone(),
         None => Arc::new(move |_msg| {}),
     };
 
@@ -45,7 +45,8 @@ pub fn create_webview(
     "#;
 
     let webview = WebViewBuilder::new()
-        .with_url(url)
+        .with_url(&webview_config.url)
+        .with_transparent(webview_config.transparent)
         .with_initialization_script(INTIALIZATION_SCRIPT)
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();

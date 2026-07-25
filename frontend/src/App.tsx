@@ -6,6 +6,7 @@ import "./index.css";
 import "./App.css";
 import invoke_command from "./lib/invoke_command";
 import useStartTask from "./hooks/task/useStartTask";
+import window_commands from "./lib/window_commands";
 //import start_task from "./lib/start_task";
 
 function App() {
@@ -85,11 +86,21 @@ function App() {
     };
 
     const create_window = async () => {
-        const req = await invoke_command("create_window", {
-            window_name: "Note.txt",
-            url: "http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", ,
+        // const req = await invoke_command("create_window", {
+        //     window_name: "Note.txt",
+        //     url: "http://localhost:5173/", //"https://www.youtube.com/watch?v=LffX3pZ2BiA&t=68s", ,
+        // });
+        // //  `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
+        // console.log(req);
+        const req = await window_commands.create_window({
+            window_name: "New Window from me",
+            url: "http://localhost:5173/",
+            width: 600,
+            height: 500,
+            decoration: true,
+            icon_path: "",
         });
-        //  `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
+
         console.log(req);
     };
 
@@ -100,7 +111,7 @@ function App() {
 
     return (
         <>
-            <section id="center">
+            <section id="center" className="bg-white">
                 <div
                     // onMouseDown={() => (mouseDown.current = true)}
                     // onMouseUp={() => (mouseDown.current = false)}

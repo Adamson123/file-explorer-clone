@@ -3,7 +3,7 @@ import IPCHandler from "./ipc_handler";
 type CMD =
     | "minimize_window"
     | "move_window"
-    | "hide_decoration"
+    | "set_decoration"
     | "create_window"
     | (string & {});
 

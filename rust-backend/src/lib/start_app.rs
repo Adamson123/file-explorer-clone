@@ -9,7 +9,7 @@ use crate::{
     globals::Globals,
     user_events::UserEvent,
     user_events_handler::user_events_handler,
-    webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager},
+    webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup},
 };
 
 pub struct MainThreadStates<'a> {
@@ -27,11 +27,19 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
         webview_windows: HashMap::new(),
     };
 
-    let main_window_config = WebViewWindowConfig {
+    let main_window_config = WebViewWindowSetup {
         event_loop: &event_loop,
         ipc_handler: None,
-        url: "http://localhost:5173".into(),
-        window_name: "File Explorer".into(),
+        window_config: WebViewWindowConfig {
+            window_name: "Main Window".to_string(),
+            url: "http://localhost:5173".to_string(),
+            width: 800,
+            height: 600,
+            decoration: true,
+            icon_path: String::new(),
+            transparent: false,
+            shadow: true,
+        },
     };
 
     let main_window_key = webview_windows_manager.add_webview_window(&main_window_config);
@@ -53,13 +61,6 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
                     window_id,
                     ..
                 } => {
-                    //And why is it not complaining that they two &mut ref to webview_windows_manager, is it scope
-                    // let mut main_thread_states = MainThreadStates {
-                    //     event_loop: event_loop,
-                    //     globals: globals_clone_2.clone(),
-                    //     webview_windows_manager: &mut webview_windows_manager,
-                    // };
-
                     let webview_window =
                         webview_windows_manager.get_webview_window_by_tao_window_id(window_id);
 

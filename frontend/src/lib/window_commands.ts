@@ -1,19 +1,38 @@
 import invoke_command from "./invoke_command";
 
-const WindowConfig = {
-    windwo_name: "",
+/*
+pub struct WebViewWindowConfig {
+    pub window_name: String,
+    pub url: String,
+    pub width: i32,
+    pub height: i32,
+    pub decoration: bool,
+    pub transparent: bool,
+    pub icon_path: String,
+    pub shadow: bool,
+}
+
+I don't know why but if you set transparent to true and you want it to take effect, you have to set decoration and shadow to false.
+*/
+const webview_window_config = {
+    window_name: "",
     url: "",
     width: 600,
     height: 500,
-    hide_decoration: false,
+    decoration: true,
     icon_path: "",
+    transparent: false,
+    shadow: true,
 };
 
 const create_window = async (
-    args: Partial<typeof WindowConfig> & { windwo_name: string; url: string },
+    args: Partial<typeof webview_window_config> & {
+        window_name: string;
+        url: string;
+    },
 ): Promise<void> => {
     const default_args = {
-        ...WindowConfig,
+        ...webview_window_config,
         ...args,
     };
     return await invoke_command("create_window", default_args);
@@ -27,15 +46,15 @@ const move_window = async (): Promise<void> => {
     return await invoke_command("move_window");
 };
 
-const hide_decoration = async (args: boolean): Promise<void> => {
-    return await invoke_command("hide_decoration", args);
+const set_decoration = async (args: boolean): Promise<void> => {
+    return await invoke_command("set_decoration", args);
 };
 
 const window_commands = {
     create_window,
     minimize_window,
     move_window,
-    hide_decoration,
+    set_decoration,
 };
 
 export default window_commands;

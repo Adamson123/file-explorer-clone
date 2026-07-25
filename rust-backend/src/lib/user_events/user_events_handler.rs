@@ -5,7 +5,7 @@ use crate::start_app::MainThreadStates;
 use crate::tasks_ipc_handler::tasks_ipc_handler;
 use crate::user_events::{UserEvent, WebviewEvent, WindowEvent};
 use crate::utils::get_field_as_string;
-use crate::webview_windows_manager::WebViewWindowConfig;
+use crate::webview_windows_manager::WebViewWindowSetup;
 use std::sync::Arc;
 
 pub fn user_events_handler(
@@ -23,8 +23,6 @@ pub fn user_events_handler(
             let def = json!({});
             let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
             let msg_type = get_field_as_string(&body, "msg_type");
-
-            // println!("Msg Type: {msg_type}");
 
             if msg_type == "task" {
                 tasks_ipc_handler(window_key, &body, main_thread_states.globals.clone());
@@ -46,12 +44,11 @@ pub fn user_events_handler(
             }
         }
 
-        UserEvent::CreateNewWindow(c) => {
-            let new_window_config = WebViewWindowConfig {
+        UserEvent::CreateNewWindow(w) => {
+            let new_window_config = WebViewWindowSetup {
                 event_loop: main_thread_states.event_loop,
                 ipc_handler: None,
-                url: c.url.clone(),
-                window_name: c.window_name.clone(),
+                window_config: w.clone(),
             };
 
             let _id = main_thread_states

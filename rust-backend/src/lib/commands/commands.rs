@@ -3,44 +3,20 @@ use std::sync::Arc;
 use serde_json::{json, Value};
 
 use crate::{
+    command, command_struct,
     commands_registry::{BoxFuture, Command},
     globals::Globals,
-    user_events::{NewWindowConfig, UserEvent, WindowEvent},
+    user_events::{UserEvent, WindowEvent},
     utils::{get_field_as_bool, get_field_as_string, put_value_in_result},
+    webview_windows_manager::WebViewWindowConfig,
 };
-
-/*
- let end = match res {
-                    Ok(r) => String::from(r),
-                    Err(e) => String::from(e),
-                };
-                end
-*/
-
-// impl ToResultString for Result<(), String> {
-//     fn to_result_string(self) -> Result<String, String> {
-//         self.map(|_| "Ok".to_string())
-//     }
-// }
-
-#[macro_export]
-macro_rules! command {
-    ($name:ident, |$args:ident, $globals:ident| $body:block) => {
-        pub fn $name<'a>($args: &'a Value, $globals: Arc<Globals>) -> BoxFuture<'a> {
-            Box::pin(async move {
-                let res = { $body };
-                res
-            })
-        }
-    };
-}
 
 command!(log, |a, _g| {
     let name = get_field_as_string(&a, "name");
     put_value_in_result(&json!({"name": name}))
 });
 
-command!(minimize_window, |a, g| {
+command_struct!(minimize_window, |a, g| {
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         get_field_as_string(a, "window_key"),
         WindowEvent::Minimize(true),
@@ -48,7 +24,7 @@ command!(minimize_window, |a, g| {
     Ok(String::new())
 });
 
-command!(move_window, |a, g| {
+command_struct!(move_window, |a, g| {
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         get_field_as_string(a, "window_key"),
         WindowEvent::DragWindow,
@@ -56,7 +32,7 @@ command!(move_window, |a, g| {
     Ok(String::from("Moving window"))
 });
 
-command!(hide_decoration, |a, g| {
+command_struct!(set_decoration, |a, g| {
     let minimize = get_field_as_bool(&a, "minimize");
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         get_field_as_string(a, "window_key"),
@@ -65,30 +41,15 @@ command!(hide_decoration, |a, g| {
     Ok(String::from("Moving window"))
 });
 
-#[macro_export]
-macro_rules! command_struct {
-    ($name:ident, |$args:ident, $globals:ident| $body:block) => {
-        pub fn $name() -> Command {
-            fn fnt<'a>($args: &'a Value, $globals: Arc<Globals>) -> BoxFuture<'a> {
-                Box::pin(async move {
-                    let res = { $body };
-                    res
-                })
-            }
+command_struct!(create_window, |a, g| {
+    let window_config: WebViewWindowConfig =
+        serde_json::from_value(a.clone()).map_err(|e| e.to_string())?;
 
-            let name = stringify!($name).to_string();
+    g.event_loop_proxy
+        .send_event(UserEvent::CreateNewWindow(window_config))
+        .map_err(|a| a.to_string())?;
 
-            Command {
-                name,
-                function: Arc::new(fnt),
-            }
-        }
-    };
-}
-
-command_struct!(log_struct, |args, _g| {
-    let name = get_field_as_string(&args, "name");
-    put_value_in_result(&json!({"name": name}))
+    Ok(String::from("Created"))
 });
 
 pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
@@ -130,8 +91,6 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
         entries.push(obj);
     }
 
-    // compare_yield_vs_no_yield().await;
-
     println!("Done reading dir: {path}");
 
     let entries_json = serde_json::to_string(&entries).unwrap_or(String::new());
@@ -139,16 +98,3 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
 }
 
 command_struct!(get_dir_contents, |a, g| { get_dir_c(a, g).await });
-
-command_struct!(create_window, |a, g| {
-    let window_config = NewWindowConfig {
-        url: get_field_as_string(a, "url"),
-        window_name: get_field_as_string(a, "window_name"),
-    };
-
-    g.event_loop_proxy
-        .send_event(UserEvent::CreateNewWindow(window_config))
-        .map_err(|a| a.to_string())?;
-
-    Ok(String::from("Created"))
-});

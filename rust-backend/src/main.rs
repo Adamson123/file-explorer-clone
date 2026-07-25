@@ -2,8 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use file_explorer_clone::{
     commands::{
-        create_window, get_dir_contents, hide_decoration, log, log_struct, minimize_window,
-        move_window,
+        create_window, get_dir_contents, log, minimize_window, move_window, set_decoration,
     },
     commands_registry::CommandsRegistry,
     globals::Globals,
@@ -23,14 +22,14 @@ async fn main() {
     };
 
     commands_register.register("log", Arc::new(log));
-    commands_register.register("minimize_window", Arc::new(minimize_window));
-    commands_register.register("move_window", Arc::new(move_window));
-    commands_register.register("hide_decoration", Arc::new(hide_decoration));
 
-    commands_register.register_command(log_struct());
-    commands_register.register_command(get_dir_contents());
+    // Window management commands
+    commands_register.register_command(minimize_window());
+    commands_register.register_command(move_window());
+    commands_register.register_command(set_decoration());
     commands_register.register_command(create_window());
-    //  commands_register.register_command(monitor_dir());
+
+    commands_register.register_command(get_dir_contents());
 
     let mut task_manager = TaskManager {
         active_tasks: HashMap::new(),

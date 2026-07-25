@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use serde::{Deserialize, Serialize};
 use tao::{
     event_loop::EventLoopWindowTarget,
     window::{Window, WindowId},
@@ -14,9 +15,58 @@ use crate::{
     user_events::UserEvent,
 };
 
-pub struct WebViewWindowConfig<'a> {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct WebViewWindowConfig {
     pub window_name: String,
     pub url: String,
+    pub width: i32,
+    pub height: i32,
+    pub decoration: bool,
+    pub transparent: bool,
+    pub icon_path: String,
+    pub shadow: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct WindowConfig {
+    pub window_name: String,
+    pub width: i32,
+    pub height: i32,
+    pub decoration: bool,
+    pub transparent: bool,
+    pub icon_path: String,
+    pub shadow: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebViewConfig {
+    pub url: String,
+    pub transparent: bool,
+}
+
+impl WebViewWindowConfig {
+    pub fn window_config(&self) -> WindowConfig {
+        WindowConfig {
+            window_name: self.window_name.clone(),
+            width: self.width,
+            height: self.height,
+            decoration: self.decoration,
+            transparent: self.transparent,
+            icon_path: self.icon_path.clone(),
+            shadow: self.shadow,
+        }
+    }
+
+    pub fn webview_config(&self) -> WebViewConfig {
+        WebViewConfig {
+            url: self.url.clone(),
+            transparent: self.transparent,
+        }
+    }
+}
+
+pub struct WebViewWindowSetup<'a> {
+    pub window_config: WebViewWindowConfig,
     pub event_loop: &'a EventLoopWindowTarget<UserEvent>,
     pub ipc_handler: Option<IPCHandler>,
 }
@@ -35,25 +85,25 @@ pub struct WebViewWindowManager {
 impl WebViewWindowManager {
     pub fn add_webview_window(
         &mut self,
-        webview_window_config: &WebViewWindowConfig,
+        webview_window_setup: &WebViewWindowSetup,
     ) -> Result<String, String> {
         let id = Uuid::new_v4().to_string();
-        let window = create_window(
-            &webview_window_config.window_name,
-            &webview_window_config.event_loop,
-        );
+        let window_config: WindowConfig = webview_window_setup.window_config.window_config();
+
+        let window = create_window(&window_config, &webview_window_setup.event_loop);
 
         if let Err(e) = window {
             return Err(format!("Failed to create window: {}", e));
         }
         let window = window.unwrap();
 
+        let webview_config: WebViewConfig = webview_window_setup.window_config.webview_config();
         let webview = create_webview(
             &window,
             &id,
             self.globals.clone(),
-            webview_window_config.ipc_handler.clone(),
-            &webview_window_config.url,
+            &webview_window_setup.ipc_handler,
+            &webview_config,
         );
 
         if let Err(e) = webview {
