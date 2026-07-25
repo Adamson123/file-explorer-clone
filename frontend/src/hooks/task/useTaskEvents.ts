@@ -26,7 +26,7 @@ function useTaskEvents(
 
             task_events.remove_on_exit();
             task_events.remove_on_message();
-            task_events.remove_on_error();
+            // task_events.remove_on_error();
         };
 
         const on_error_func = (e: any) => {

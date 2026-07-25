@@ -1,23 +1,34 @@
 import { useMemo } from "react";
 import type { ListenersRef } from "./useStartTask";
-import type useTaskEvents from "./useTaskEvents";
+//import type useTaskEvents from "./useTaskEvents";
+import type { IPCMsg, TaskIPCMsg } from "../../lib/types";
 
 function useEventsHandler(
     listeners_ref: ListenersRef,
     event_name_ref: React.RefObject<string>,
     task_id_ref: React.RefObject<string>,
-    task_events: ReturnType<typeof useTaskEvents>,
+    //  task_events: ReturnType<typeof useTaskEvents>,
+    task_name: string,
     setIsStarted: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
     const events_handler = useMemo(() => {
         const listeners = listeners_ref.current;
 
-        const msg_default_obj = {
-            event_name: event_name_ref.current,
-            task_id: task_id_ref.current,
-            args: {} as any,
+        const msg_default_obj: IPCMsg<TaskIPCMsg> = {
+            // event_name: event_name_ref.current,
+            // task_id: task_id_ref.current,
+            // args: {} as any,
+            // msg_type: "task",
+            // action: "task_msg",
             msg_type: "task",
-            action: "task_msg",
+            body: {
+                task_name,
+                task_id: task_id_ref.current,
+                event_name: event_name_ref.current,
+                args: {} as any,
+                id: "",
+                action: "task_msg",
+            },
         };
 
         const get_msg_obj = (
@@ -25,8 +36,8 @@ function useEventsHandler(
                 [key: string]: unknown;
             },
         ) => ({
-            ...msg_default_obj,
-            ...fields,
+            msg_type: msg_default_obj.msg_type,
+            body: { ...msg_default_obj.body, ...fields },
         });
 
         return {

@@ -1,4 +1,5 @@
 import IPCHandler from "./ipc_handler";
+import type { CommandIPCMsg, IPCMsg } from "./types";
 
 type CMD =
     | "minimize_window"
@@ -15,11 +16,17 @@ const invoke_command = async <T = any>(
         const id = IPCHandler.addPromise(res, rej);
         (window as any).ipc.postMessage(
             JSON.stringify({
-                cmd,
-                args,
-                id,
-                type: "command",
-            }),
+                // cmd,
+                // args,
+                // id,
+                // type: "command",
+                msg_type: "command",
+                body: {
+                    cmd,
+                    args,
+                    id,
+                },
+            } as IPCMsg<CommandIPCMsg>),
         );
     });
     return response as T;

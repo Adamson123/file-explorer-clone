@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use serde_json::{json, Value};
+use serde_json::{json, Error, Value};
 use tao::event_loop::EventLoopProxy;
 
 use crate::{
+    commands_registry::Command,
     globals::Globals,
     user_events::{UserEvent, WebviewEvent},
+    user_events_handler::CommandIPCMsg,
     utils::{construct_js_event, get_field_as_string},
 };
 
@@ -34,15 +36,25 @@ pub async fn send_ipc_response(
 }
 
 pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {
-    // let def = json!({});
-    // let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
+    let ipc_msg: Result<CommandIPCMsg, Error> = serde_json::from_value(body.clone());
+    if ipc_msg.is_err() {
+        println!("Error parsing CommandIPCMsg: {}", ipc_msg.err().unwrap());
+        return;
+    }
+    let ipc_msg = ipc_msg.unwrap();
 
     // 1. Get the existing "args" as a Map (clone it), or create a new empty Map
-    let mut args_map = body
-        .get("args")
-        .and_then(|v| v.as_object()) // gets &Map
-        .cloned() // clones it into a new owned Map
-        .unwrap_or_else(|| serde_json::Map::new()); // fallback to empty Map
+    // let mut args_map = body
+    //     .get("args")
+    //     .and_then(|v| v.as_object()) // gets &Map
+    //     .cloned() // clones it into a new owned Map
+    //     .unwrap_or_else(|| serde_json::Map::new()); // fallback to empty Map
+
+    let mut args_map = ipc_msg
+        .args
+        .as_object()
+        .cloned()
+        .unwrap_or_else(|| serde_json::Map::new());
 
     // 2. Insert the new key into the Map
     args_map.insert("window_key".to_string(), json!(window_key));
@@ -50,8 +62,8 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
     // 3. Convert the Map into a Value (Object variant)
     let args: Value = Value::Object(args_map);
 
-    let cmd = get_field_as_string(&body, "cmd");
-    let request_id: String = get_field_as_string(&body, "id");
+    let cmd = ipc_msg.cmd.clone();
+    let request_id: String = ipc_msg.id.clone();
 
     // println!("Body: {}", body);
     // println!("args: {}, cmd: {}, id: {}", args, cmd, id);
@@ -60,7 +72,7 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
         let commands_register = globals.commands_register.lock().await;
 
         commands_register.invoke_command(&cmd, &args, globals.clone())
-    }; // 🔓 lock released here
+    };
 
     let res = match command {
         Ok(f) => f.await,

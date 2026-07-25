@@ -1,10 +1,10 @@
-export type CommandMsg = {
+export type CommandIPCMsg = {
     cmd: string;
     args: any;
     id: string;
 };
 
-export type TaskMsg = {
+export type TaskIPCMsg = {
     task_name: string;
     task_id: string;
     event_name: string;
@@ -13,7 +13,7 @@ export type TaskMsg = {
     action: "start" | "task_msg" | "force_kill" | "kill_all";
 };
 
-export type IPCMsg = {
+export type IPCMsg<T extends CommandIPCMsg | TaskIPCMsg> = {
     msg_type: "command" | "task";
-    msg: CommandMsg | TaskMsg;
+    body: T;
 };

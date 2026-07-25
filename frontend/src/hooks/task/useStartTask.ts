@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import IPCHandler from "../../lib/ipc_handler";
 import useTaskEvents from "./useTaskEvents";
 import useEventsHandler from "./useEventsHandler";
+import type { IPCMsg, TaskIPCMsg } from "../../lib/types";
 
 type ListenerCallback = { callback: (e: any) => void; id: string };
 
@@ -33,7 +34,8 @@ function useStartTask(task_name: string) {
         listeners_ref,
         event_name_ref,
         task_id_ref,
-        task_events,
+        // task_events,
+        task_name,
         setIsStarted,
     );
 
@@ -53,8 +55,10 @@ function useStartTask(task_name: string) {
         // if (called_ref.current) return;
         // called_ref.current = true;
 
+        console.log("Ignited start");
         task_events.add_on_message();
         task_events.add_on_exit();
+        task_events.remove_on_error();
         task_events.add_on_error();
 
         //Send task_name, task_id to rust backend -> rust backend combines task_name + task_id to form event_name, this is the only time we will send task_name
@@ -62,13 +66,22 @@ function useStartTask(task_name: string) {
             const id = IPCHandler.addPromise(res, rej);
             (window as any).ipc.postMessage(
                 JSON.stringify({
-                    task_name,
-                    task_id: task_id_ref.current,
-                    args: { sender: "listener", data: args },
-                    id,
+                    // task_name,
+                    // task_id: task_id_ref.current,
+                    // args: { sender: "listener", data: args },
+                    // id,
+                    // msg_type: "task",
+                    // action: "start",
                     msg_type: "task",
-                    action: "start",
-                }),
+                    body: {
+                        action: "start",
+                        task_name,
+                        task_id: task_id_ref.current,
+                        event_name: event_name_ref.current,
+                        args: { sender: "listener", data: args },
+                        id,
+                    },
+                } as IPCMsg<TaskIPCMsg>),
             );
         });
 

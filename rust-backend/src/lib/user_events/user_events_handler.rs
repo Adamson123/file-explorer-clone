@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::commands_ipc_handler::commands_ipc_handler;
@@ -7,6 +8,51 @@ use crate::user_events::{UserEvent, WebviewEvent, WindowEvent};
 use crate::utils::get_field_as_string;
 use crate::webview_windows_manager::WebViewWindowSetup;
 use std::sync::Arc;
+
+/*
+TS types for IPC messages
+export type CommandIPCMsg = {
+    cmd: string;
+    args: any;
+    id: string;
+};
+
+export type TaskIPCMsg = {
+    task_name: string;
+    task_id: string;
+    event_name: string;
+    args: any;
+    id: string;
+    action: "start" | "task_msg" | "force_kill" | "kill_all";
+};
+
+export type IPCMsg<T extends CommandIPCMsg | TaskIPCMsg> = {
+    msg_type: "command" | "task";
+    msg: T;
+};
+*/
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CommandIPCMsg {
+    pub cmd: String,
+    pub args: Value,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TaskIPCMsg {
+    pub task_name: String,
+    pub task_id: String,
+    pub event_name: String,
+    pub args: Value,
+    pub id: String,
+    pub action: String, // "start" | "task_msg" | "force_kill" | "kill_all"
+}
+
+// pub struct IPCMsg<T> {
+//     pub msg_type: String, // "command" | "task"
+//     pub msg: T,
+// }
 
 pub fn user_events_handler(
     event: &UserEvent,
@@ -21,8 +67,9 @@ pub fn user_events_handler(
     match event {
         UserEvent::IPCMessage(window_key, msg) => {
             let def = json!({});
-            let body: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
-            let msg_type = get_field_as_string(&body, "msg_type");
+            let msg: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
+            let msg_type = get_field_as_string(&msg, "msg_type");
+            let body = msg.get("body").cloned().unwrap_or(def.clone());
 
             if msg_type == "task" {
                 tasks_ipc_handler(window_key, &body, main_thread_states.globals.clone());

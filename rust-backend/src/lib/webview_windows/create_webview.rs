@@ -26,7 +26,14 @@ pub fn create_webview(
             window.ipc.postMessage(
                 JSON.stringify({
                     msg_type: "task",
-                    action: "kill_all",
+                    body: {
+                        action: "kill_all",
+                        task_name: "",
+                        task_id: "",
+                        event_name: "",
+                        args: {},
+                        id: "",
+                    },
                 }),
             );
         });
@@ -35,9 +42,12 @@ pub fn create_webview(
         if(event.target.closest(`[move-window="true"]`)){
           window.ipc.postMessage(
             JSON.stringify({
-                cmd:"move_window",
-                id:"",
-                type: "command",
+                msg_type: "command",
+                body: {
+                    cmd: "move_window",
+                    args: {},
+                    id: "",
+                },
             }),
         );
          }

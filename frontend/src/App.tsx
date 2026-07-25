@@ -20,15 +20,13 @@ function App() {
             try {
                 console.log("ss");
 
-                const res = await invoke_command<{ name: string }>(
-                    "log_struct",
-                    {
-                        name: "Data from frontend invoke",
-                    },
-                );
+                const res = await invoke_command<{ name: string }>("log", {
+                    name: "Data from frontend invoke",
+                });
                 console.log({ res, name: res?.name });
 
                 await start_task("hello");
+                console.log("After starting task");
 
                 events_handler.add_message_listener((e) => {
                     console.log(e);
@@ -47,7 +45,7 @@ function App() {
                     path: "C:\\Users\\Admin\\Downloads\\The Hobbit An Unexpected Journey (2012) [1080p]",
                 });
             } catch (error: any) {
-                console.log(error.message);
+                console.error(error.message);
             }
         })();
 

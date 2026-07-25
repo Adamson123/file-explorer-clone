@@ -18,8 +18,6 @@ pub fn create_window(
     window_config: &WindowConfig,
     event_loop: &EventLoopWindowTarget<UserEvent>,
 ) -> Result<Window, String> {
-    println!("Creating window with config: {:#?}", window_config);
-
     let window = WindowBuilder::new()
         .with_title(window_config.window_name.clone())
         .with_transparent(window_config.transparent)
