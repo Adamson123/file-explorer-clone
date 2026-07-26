@@ -32,7 +32,6 @@ pub async fn send_ipc_response(
         "error":error,
         "request_id":request_id
     });
-
     let js_event = construct_js_event("ipc-response", &json_response);
 
     let _ = proxy.send_event(UserEvent::WebviewEvent(
@@ -54,18 +53,13 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
         .as_object()
         .cloned()
         .unwrap_or_else(|| serde_json::Map::new());
-
     // 2. Insert the new key into the Map
     args_map.insert("window_key".to_string(), json!(window_key));
 
     // 3. Convert the Map into a Value (Object variant)
     let args: Value = Value::Object(args_map);
-
     let cmd = ipc_msg.cmd.clone();
     let request_id: String = ipc_msg.request_id.clone();
-
-    // println!("Body: {}", body);
-    // println!("args: {}, cmd: {}, request_id: {}", args, cmd, request_id);
 
     let command = {
         let commands_register = globals.commands_register.lock().await;
