@@ -1,5 +1,5 @@
-import IPCHandler from "./ipc_handler";
-import type { CommandIPCMsg, IPCMsg } from "./types";
+import { send_ipc_msg_with_promise } from "./ipc_send_helper";
+import type { CommandIPCMsg } from "./types";
 
 type CMD =
     | "minimize_window"
@@ -12,19 +12,29 @@ const invoke_command = async <T = any>(
     cmd: CMD,
     args: any = "",
 ): Promise<T | undefined> => {
-    const response = await new Promise((res, rej) => {
-        const id = IPCHandler.addPromise(res, rej);
-        (window as any).ipc.postMessage(
-            JSON.stringify({
-                msg_type: "command",
-                body: {
-                    cmd,
-                    args,
-                    id,
-                },
-            } as IPCMsg<CommandIPCMsg>),
-        );
+    const response = await send_ipc_msg_with_promise<CommandIPCMsg>({
+        msg_type: "command",
+        body: {
+            cmd,
+            args,
+            //  request_id: "",
+        },
     });
+
+    // const response = await new Promise((res, rej) => {
+    //     const id = IPCHandler.addPromise(res, rej);
+    //     (window as any).ipc.postMessage(
+    //         JSON.stringify({
+    //             msg_type: "command",
+    //      body: {
+    //             cmd,
+    //          args,
+    //           request_id: id,
+    //            },
+    //         } as IPCMsg<CommandIPCMsg>),
+    //     );
+    // });
+
     return response as T;
 };
 

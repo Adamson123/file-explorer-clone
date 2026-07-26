@@ -14,7 +14,7 @@ use crate::{
 pub struct CommandIPCMsg {
     pub cmd: String,
     pub args: Value,
-    pub id: String,
+    pub request_id: String,
 }
 
 pub async fn send_ipc_response(
@@ -62,7 +62,7 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
     let args: Value = Value::Object(args_map);
 
     let cmd = ipc_msg.cmd.clone();
-    let request_id: String = ipc_msg.id.clone();
+    let request_id: String = ipc_msg.request_id.clone();
 
     // println!("Body: {}", body);
     // println!("args: {}, cmd: {}, id: {}", args, cmd, id);

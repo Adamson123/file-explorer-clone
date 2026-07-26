@@ -78,7 +78,7 @@ impl TaskManager {
             return Ok(String::from("Task ended successfully"));
         }
 
-        Err(String::from("Task not found"))
+        Err(String::from("Event not found"))
     }
 
     pub fn end_window_tasks(&mut self, window_key: &str) {

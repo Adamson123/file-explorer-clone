@@ -10,12 +10,21 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum TaskAction {
+    Start,
+    TaskMsg,
+    ForceKill,
+    KillAll,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TaskIPCMsg {
     pub task_name: String,
     pub task_id: String,
     pub event_name: String,
     pub args: Value,
-    pub id: String,
+    pub request_id: String,
+    //TODO: use enum
     pub action: String, // "start" | "task_msg" | "force_kill" | "kill_all"
 }
 
@@ -33,9 +42,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
     if ipc_msg.action == "start" {
         tokio::task::spawn({
             let task_name = ipc_msg.task_name.clone();
-            let id = ipc_msg.id.clone();
-            // let task_id = ipc_msg.task_id.clone();
-
+            let request_id = ipc_msg.request_id.clone();
             let args = ipc_msg.args;
             let window_key = window_key.to_string();
             let globals = globals.clone();
@@ -56,10 +63,9 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                     ("".into(), res.unwrap())
                 } else {
                     (res.err().unwrap_or(String::new()), "".into())
-                    //TODO: Maybe also fire frontend task error eventlistener
                 };
 
-                let response = json!({"id":id, "error": error, "data": res  });
+                let response = json!({"id":request_id, "error": error, "data": res  });
                 let js_event = construct_js_event("ipc-response", &response);
 
                 let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
@@ -78,6 +84,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let args = ipc_msg.args.clone();
             let globals = globals.clone();
             let window_key = window_key.to_string();
+            let request_id = ipc_msg.request_id.clone();
 
             async move {
                 let sender = {
@@ -88,10 +95,13 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 if let Some(s) = sender {
                     s.await;
                 } else {
-                    let js_event = construct_js_event(
-                        &format!("{}_error", event_name),
-                        &json!({"error": "Event not found"}),
-                    );
+                    // let js_event = construct_js_event(
+                    //     &format!("{}_error", event_name),
+                    //     &json!({"error": "Event not found"}),
+                    // );
+
+                    let response = json!({"id":request_id, "error": format!("Event not found: {}", event_name), "data": ""  });
+                    let js_event = construct_js_event("ipc-response", &response);
 
                     let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                         window_key.to_string(),
@@ -111,6 +121,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let event_name = ipc_msg.event_name.clone();
             let globals = globals.clone();
             let window_key = window_key.to_string();
+            let request_id = ipc_msg.request_id.clone();
 
             async move {
                 let res = {
@@ -119,8 +130,10 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                 };
                 // 👆 The guard is dropped HERE (at the end of the block).
                 if let Err(e) = res {
-                    let js_event =
-                        construct_js_event(&format!("{}_error", event_name), &json!({"error": e}));
+                    // let js_event =
+                    //     construct_js_event(&format!("{}_error", event_name), &json!({"error": e}));
+                    let response = json!({"id":request_id, "error": format!("Error killing task: {}", e), "data": ""  });
+                    let js_event = construct_js_event("ipc-response", &response);
 
                     let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
                         window_key.to_string(),

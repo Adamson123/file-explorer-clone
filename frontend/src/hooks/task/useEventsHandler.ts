@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import type { ListenersRef } from "./useStartTask";
 import type { IPCMsg, TaskIPCMsg } from "../../lib/types";
+import {
+    send_ipc_msg,
+    send_ipc_msg_with_promise,
+} from "../../lib/ipc_send_helper";
 
 function useEventsHandler(
     listeners_ref: ListenersRef,
@@ -19,7 +23,7 @@ function useEventsHandler(
                 task_id: task_id_ref.current,
                 event_name: event_name_ref.current,
                 args: {} as any,
-                id: "",
+                request_id: "",
                 action: "task_msg",
             },
         };
@@ -60,49 +64,41 @@ function useEventsHandler(
                 listeners.error_listeners.push({ id, callback });
             },
 
-            send_msg: (args: any) => {
-                (window as any).ipc.postMessage(
-                    JSON.stringify(
-                        get_msg_obj({
-                            args: { sender: "listener", data: args },
-                        }),
-                    ),
+            send_msg: async (args: any) => {
+                await send_ipc_msg_with_promise<TaskIPCMsg>(
+                    get_msg_obj({
+                        args: { sender: "listener", data: args },
+                    }),
                 );
             },
 
-            pause: () => {
-                (window as any).ipc.postMessage(
-                    JSON.stringify(
-                        get_msg_obj({
-                            args: {
-                                sender: "manager",
-                                data: { state: "pause" },
-                            },
-                        }),
-                    ),
+            pause: async () => {
+                await send_ipc_msg_with_promise<TaskIPCMsg>(
+                    get_msg_obj({
+                        args: {
+                            sender: "manager",
+                            data: { state: "pause" },
+                        },
+                    }),
                 );
             },
 
-            resume: () => {
-                (window as any).ipc.postMessage(
-                    JSON.stringify(
-                        get_msg_obj({
-                            args: { sender: "manager", data: { state: "run" } },
-                        }),
-                    ),
+            resume: async () => {
+                await send_ipc_msg_with_promise<TaskIPCMsg>(
+                    get_msg_obj({
+                        args: { sender: "manager", data: { state: "run" } },
+                    }),
                 );
             },
 
-            cancel() {
-                (window as any).ipc.postMessage(
-                    JSON.stringify(
-                        get_msg_obj({
-                            args: {
-                                sender: "manager",
-                                data: { state: "cancel" },
-                            },
-                        }),
-                    ),
+            cancel: async () => {
+                await send_ipc_msg_with_promise<TaskIPCMsg>(
+                    get_msg_obj({
+                        args: {
+                            sender: "manager",
+                            data: { state: "cancel" },
+                        },
+                    }),
                 );
 
                 //  task_events.remove_on_error();
@@ -114,15 +110,14 @@ function useEventsHandler(
                 setIsStarted(false);
             },
             //TODO: Force kill task in rust backend, currently cancel is just a message to rust backend to cancel the task, but if the task is stuck in a loop or waiting for something, it will not be cancelled, we need to force cancel the task in rust backend, so we need to send a message to rust backend to force cancel the task, and rust backend will abort the task
-            force_cancel() {
-                (window as any).ipc.postMessage(
-                    JSON.stringify(
-                        get_msg_obj({
-                            action: "force_kill",
-                        }),
-                    ),
+            force_cancel: async () => {
+                await send_ipc_msg_with_promise<TaskIPCMsg>(
+                    get_msg_obj({
+                        action: "force_kill",
+                    }),
                 );
             },
+
             remove_message_listener(id: string) {
                 let message_listeners = listeners_ref.current.message_listeners;
                 message_listeners = message_listeners.filter(

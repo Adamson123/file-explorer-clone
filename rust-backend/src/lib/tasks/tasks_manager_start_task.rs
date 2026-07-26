@@ -1,7 +1,6 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use serde_json::{json, Value};
-use tao::event;
 use tokio::{
     sync::mpsc::{channel, Receiver, Sender},
     task::JoinHandle,

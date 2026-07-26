@@ -32,7 +32,7 @@ pub fn create_webview(
                         task_id: "",
                         event_name: "",
                         args: {},
-                        id: "",
+                        request_id: "",
                     },
                 }),
             );
@@ -46,7 +46,7 @@ pub fn create_webview(
                 body: {
                     cmd: "move_window",
                     args: {},
-                    id: "",
+                    request_id: "",
                 },
             }),
         );

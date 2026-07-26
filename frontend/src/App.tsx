@@ -49,9 +49,9 @@ function App() {
             }
         })();
 
-        return () => {
-            events_handler.cancel();
-        };
+        // return () => {
+        //     events_handler.cancel();
+        // };
     }, []);
 
     const minimize_window = async () => {
@@ -96,7 +96,7 @@ function App() {
             width: 600,
             height: 500,
             decoration: false,
-            icon_path: ""
+            icon_path: "",
         });
 
         console.log(req);
@@ -155,11 +155,12 @@ function App() {
                     <button
                         type="button"
                         className="p-2.5 bg-red-300 hover:bg-red-500 active:scale-95"
-                        onClick={() => {
-                            events_handler.send_msg({
+                        onClick={async () => {
+                            await events_handler.send_msg({
                                 msg: "from frontend again!!!",
                                 path: pathInput, //.replaceAll("\\", "\\\\"),
                             });
+                            //console.log({ msg_res: res });
                         }}
                     >
                         Send dir
@@ -199,8 +200,8 @@ function App() {
                 <button
                     type="button"
                     className="counter"
-                    onClick={() => {
-                        events_handler.force_cancel();
+                    onClick={async () => {
+                        await events_handler.force_cancel();
                     }}
                 >
                     Force cancel
