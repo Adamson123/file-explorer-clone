@@ -12,7 +12,7 @@ use crate::{
 };
 
 task!(monitor_dir, |a| {
-    println!("Started Monitor");
+    println!("Starting Monitor...");
 
     let def = json!({});
     let mut current_path = json!({});

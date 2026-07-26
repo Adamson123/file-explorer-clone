@@ -41,7 +41,6 @@ function useStartTask(task_name: string) {
     const start_task = useCallback(async (args: any) => {
         task_events.add_on_message();
         task_events.add_on_exit();
-        task_events.remove_on_error();
         task_events.add_on_error();
 
         const start_msg = await send_ipc_msg_with_promise<TaskIPCMsg>({

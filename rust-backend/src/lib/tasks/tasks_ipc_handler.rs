@@ -113,7 +113,7 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                         let mut tasks_manager = globals.tasks_manager.lock().await;
                         tasks_manager.end_task(&event_name)
                     };
-                    // 👆 The guard is dropped HERE (at the end of the block).
+
                     if let Err(e) = res {
                         let response = json!({"request_id":request_id, "error": format!("Error killing task: {}", e), "data": ""  });
                         let js_event = construct_js_event("ipc-response", &response);
