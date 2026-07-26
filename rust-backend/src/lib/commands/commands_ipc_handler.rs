@@ -30,7 +30,7 @@ pub async fn send_ipc_response(
     let json_response = serde_json::json!({
         "data":data,
         "error":error,
-        "id":request_id
+        "request_id":request_id
     });
 
     let js_event = construct_js_event("ipc-response", &json_response);
@@ -65,7 +65,7 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
     let request_id: String = ipc_msg.request_id.clone();
 
     // println!("Body: {}", body);
-    // println!("args: {}, cmd: {}, id: {}", args, cmd, id);
+    // println!("args: {}, cmd: {}, request_id: {}", args, cmd, request_id);
 
     let command = {
         let commands_register = globals.commands_register.lock().await;

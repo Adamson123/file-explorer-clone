@@ -27,7 +27,7 @@ pub fn create_webview(
                 JSON.stringify({
                     msg_type: "task",
                     body: {
-                        action: "kill_all",
+                        action: "KillAll",
                         task_name: "",
                         task_id: "",
                         event_name: "",

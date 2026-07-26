@@ -1,10 +1,7 @@
 import { useMemo } from "react";
 import type { ListenersRef } from "./useStartTask";
 import type { IPCMsg, TaskIPCMsg } from "../../lib/types";
-import {
-    send_ipc_msg,
-    send_ipc_msg_with_promise,
-} from "../../lib/ipc_send_helper";
+import { send_ipc_msg_with_promise } from "../../lib/ipc_send_helper";
 
 function useEventsHandler(
     listeners_ref: ListenersRef,
@@ -24,7 +21,7 @@ function useEventsHandler(
                 event_name: event_name_ref.current,
                 args: {} as any,
                 request_id: "",
-                action: "task_msg",
+                action: "TaskMsg",
             },
         };
 
@@ -113,7 +110,7 @@ function useEventsHandler(
             force_cancel: async () => {
                 await send_ipc_msg_with_promise<TaskIPCMsg>(
                     get_msg_obj({
-                        action: "force_kill",
+                        action: "ForceKill",
                     }),
                 );
             },

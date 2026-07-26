@@ -24,83 +24,45 @@ pub struct TaskIPCMsg {
     pub event_name: String,
     pub args: Value,
     pub request_id: String,
-    //TODO: use enum
-    pub action: String, // "start" | "task_msg" | "force_kill" | "kill_all"
+    pub action: TaskAction,
 }
 
 pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {
     let ipc_msg: Result<TaskIPCMsg, Error> = serde_json::from_value(body.clone());
-
     if ipc_msg.is_err() {
         println!("Error parsing TaskIPCMsg: {}", ipc_msg.err().unwrap());
         return;
     }
 
     let ipc_msg = ipc_msg.unwrap();
+    match ipc_msg.action {
+        TaskAction::Start => {
+            tokio::task::spawn({
+                let task_name = ipc_msg.task_name.clone();
+                let request_id = ipc_msg.request_id.clone();
+                let args = ipc_msg.args;
+                let window_key = window_key.to_string();
+                let globals = globals.clone();
+                let event_name = ipc_msg.event_name.clone();
 
-    //Start
-    if ipc_msg.action == "start" {
-        tokio::task::spawn({
-            let task_name = ipc_msg.task_name.clone();
-            let request_id = ipc_msg.request_id.clone();
-            let args = ipc_msg.args;
-            let window_key = window_key.to_string();
-            let globals = globals.clone();
-            let event_name = ipc_msg.event_name.clone();
+                async move {
+                    let res = {
+                        globals.tasks_manager.lock().await.start_task(
+                            &task_name,
+                            &event_name,
+                            &window_key,
+                            &Some(args),
+                            globals.clone(),
+                        )
+                    };
 
-            async move {
-                let res = {
-                    globals.tasks_manager.lock().await.start_task(
-                        &task_name,
-                        &event_name,
-                        &window_key,
-                        &Some(args),
-                        globals.clone(),
-                    )
-                };
+                    let (error, res) = if res.is_ok() {
+                        ("".into(), res.unwrap())
+                    } else {
+                        (res.err().unwrap_or(String::new()), "".into())
+                    };
 
-                let (error, res) = if res.is_ok() {
-                    ("".into(), res.unwrap())
-                } else {
-                    (res.err().unwrap_or(String::new()), "".into())
-                };
-
-                let response = json!({"id":request_id, "error": error, "data": res  });
-                let js_event = construct_js_event("ipc-response", &response);
-
-                let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                    window_key.to_string(),
-                    WebviewEvent::EvaluateScript(js_event),
-                ));
-            }
-        });
-        return;
-    }
-
-    //Msg
-    if ipc_msg.action == "task_msg" {
-        tokio::task::spawn({
-            let event_name = ipc_msg.event_name.clone();
-            let args = ipc_msg.args.clone();
-            let globals = globals.clone();
-            let window_key = window_key.to_string();
-            let request_id = ipc_msg.request_id.clone();
-
-            async move {
-                let sender = {
-                    let tasks_manager = globals.tasks_manager.lock().await;
-                    tasks_manager.send_msg(&event_name, &args)
-                };
-
-                if let Some(s) = sender {
-                    s.await;
-                } else {
-                    // let js_event = construct_js_event(
-                    //     &format!("{}_error", event_name),
-                    //     &json!({"error": "Event not found"}),
-                    // );
-
-                    let response = json!({"id":request_id, "error": format!("Event not found: {}", event_name), "data": ""  });
+                    let response = json!({"request_id":request_id, "error": error, "data": res  });
                     let js_event = construct_js_event("ipc-response", &response);
 
                     let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
@@ -108,57 +70,75 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
                         WebviewEvent::EvaluateScript(js_event),
                     ));
                 }
-            }
-        });
-        return;
-    }
+            });
+        }
+        TaskAction::TaskMsg => {
+            tokio::task::spawn({
+                let event_name = ipc_msg.event_name.clone();
+                let args = ipc_msg.args.clone();
+                let globals = globals.clone();
+                let window_key = window_key.to_string();
+                let request_id = ipc_msg.request_id.clone();
 
-    //Force kill task
-    //Reason: If a task is stuck, it will not be able to receive messages from the frontend, so we need to force kill it
-    if ipc_msg.action == "force_kill" {
-        println!("Force kill task with event_name: {}", ipc_msg.event_name);
-        tokio::task::spawn({
-            let event_name = ipc_msg.event_name.clone();
-            let globals = globals.clone();
-            let window_key = window_key.to_string();
-            let request_id = ipc_msg.request_id.clone();
+                async move {
+                    let sender = {
+                        let tasks_manager = globals.tasks_manager.lock().await;
+                        tasks_manager.send_msg(&event_name, &args)
+                    };
 
-            async move {
-                let res = {
-                    let mut tasks_manager = globals.tasks_manager.lock().await;
-                    tasks_manager.end_task(&event_name)
-                };
-                // 👆 The guard is dropped HERE (at the end of the block).
-                if let Err(e) = res {
-                    // let js_event =
-                    //     construct_js_event(&format!("{}_error", event_name), &json!({"error": e}));
-                    let response = json!({"id":request_id, "error": format!("Error killing task: {}", e), "data": ""  });
-                    let js_event = construct_js_event("ipc-response", &response);
+                    if let Some(s) = sender {
+                        s.await;
+                    } else {
+                        let response = json!({"request_id":request_id, "error": format!("Event not found: {}", event_name), "data": ""  });
+                        let js_event = construct_js_event("ipc-response", &response);
 
-                    let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
-                        window_key.to_string(),
-                        WebviewEvent::EvaluateScript(js_event),
-                    ));
+                        let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                            window_key.to_string(),
+                            WebviewEvent::EvaluateScript(js_event),
+                        ));
+                    }
                 }
+            });
+        }
 
-                println!("Task killed: {event_name}");
-            }
-        });
-        return;
-    }
+        TaskAction::ForceKill => {
+            tokio::task::spawn({
+                let event_name = ipc_msg.event_name.clone();
+                let globals = globals.clone();
+                let window_key = window_key.to_string();
+                let request_id = ipc_msg.request_id.clone();
 
-    //KillAll!
-    if ipc_msg.action == "kill_all" {
-        tokio::task::spawn({
-            let window_key = window_key.to_string();
-            async move {
-                println!("kill all tasks with window_key: {window_key}");
-                {
-                    let mut tasks_manager = globals.tasks_manager.lock().await;
-                    tasks_manager.end_window_tasks(&window_key);
-                };
-            }
-        });
-        return;
+                async move {
+                    let res = {
+                        let mut tasks_manager = globals.tasks_manager.lock().await;
+                        tasks_manager.end_task(&event_name)
+                    };
+                    // 👆 The guard is dropped HERE (at the end of the block).
+                    if let Err(e) = res {
+                        let response = json!({"request_id":request_id, "error": format!("Error killing task: {}", e), "data": ""  });
+                        let js_event = construct_js_event("ipc-response", &response);
+
+                        let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
+                            window_key.to_string(),
+                            WebviewEvent::EvaluateScript(js_event),
+                        ));
+                    }
+
+                    println!("Task killed: {event_name}");
+                }
+            });
+        }
+        TaskAction::KillAll => {
+            tokio::task::spawn({
+                let window_key = window_key.to_string();
+                async move {
+                    println!("kill all tasks with window_key: {window_key}");
+                    {
+                        let mut tasks_manager = globals.tasks_manager.lock().await;
+                        tasks_manager.end_window_tasks(&window_key);
+                    };
+                }
+            });
+        }
     }
 }

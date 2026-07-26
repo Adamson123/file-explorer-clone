@@ -47,7 +47,7 @@ function useStartTask(task_name: string) {
         const start_msg = await send_ipc_msg_with_promise<TaskIPCMsg>({
             msg_type: "task",
             body: {
-                action: "start",
+                action: "Start",
                 task_name,
                 task_id: task_id_ref.current,
                 event_name: event_name_ref.current,

@@ -218,6 +218,7 @@ function App() {
                             events_handler.add_message_listener((e) => {
                                 console.log(e);
                             }, "2");
+                            events_handler.remove_exit_listener("1");
                         });
                     }}
                 >

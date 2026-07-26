@@ -87,7 +87,7 @@ impl WebViewWindowManager {
         &mut self,
         webview_window_setup: &WebViewWindowSetup,
     ) -> Result<String, String> {
-        let id = Uuid::new_v4().to_string();
+        let window_key: String = Uuid::new_v4().to_string();
         let window_config: WindowConfig = webview_window_setup.window_config.window_config();
 
         let window = create_window(&window_config, &webview_window_setup.event_loop);
@@ -100,7 +100,7 @@ impl WebViewWindowManager {
         let webview_config: WebViewConfig = webview_window_setup.window_config.webview_config();
         let webview = create_webview(
             &window,
-            &id,
+            &window_key,
             self.globals.clone(),
             &webview_window_setup.ipc_handler,
             &webview_config,
@@ -112,25 +112,28 @@ impl WebViewWindowManager {
         let webview = webview.unwrap();
 
         self.webview_windows.insert(
-            id.clone(),
+            window_key.clone(),
             WebViewWindow {
                 window,
                 webview,
-                key: id.clone(),
+                key: window_key.clone(),
             },
         );
 
-        Ok(id)
+        Ok(window_key)
     }
 
     pub fn get_webview_window(&self, key: &str) -> Option<&WebViewWindow> {
         self.webview_windows.get(key)
     }
 
-    pub fn get_webview_window_by_tao_window_id(&self, id: &WindowId) -> Option<&WebViewWindow> {
+    pub fn get_webview_window_by_tao_window_id(
+        &self,
+        window_id: &WindowId,
+    ) -> Option<&WebViewWindow> {
         self.webview_windows
             .values()
-            .find(|ww| ww.window.id() == *id)
+            .find(|ww| ww.window.id() == *window_id)
     }
 
     pub fn remove_webview_window(&mut self, key: &str) {

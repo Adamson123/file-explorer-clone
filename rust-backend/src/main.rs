@@ -16,7 +16,7 @@ use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() {
-    //  fn_future(log);
+    // Initialize the commands registry and register commands
     let mut commands_register = CommandsRegistry {
         commands: HashMap::new(),
     };
@@ -31,15 +31,19 @@ async fn main() {
 
     commands_register.register_command(get_dir_contents());
 
+    // Initialize the task manager and register tasks
     let mut task_manager = TaskManager {
         active_tasks: HashMap::new(),
         tasks: HashMap::new(),
     };
+
     task_manager.register_task(monitor_dir());
 
+    // Create the event loop and proxy
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let proxy = event_loop.create_proxy();
 
+    // Create the globals object
     let globals = Globals {
         commands_register: Arc::new(Mutex::new(commands_register)),
         tasks_manager: Arc::new(Mutex::new(task_manager)),
@@ -47,6 +51,6 @@ async fn main() {
     };
 
     let globals = Arc::new(globals);
-
+    // Start the application
     start_app(event_loop, globals.clone());
 }

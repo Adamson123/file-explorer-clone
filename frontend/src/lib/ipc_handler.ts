@@ -4,7 +4,7 @@ import { RustError } from "./error";
 type IPCHandlerExecutors = {
     resolve: (value: unknown) => void;
     reject: (reason?: any) => void;
-    id: string;
+    request_id: string;
 };
 
 class IPCHandler {
@@ -14,25 +14,27 @@ class IPCHandler {
         res: IPCHandlerExecutors["resolve"],
         rej: IPCHandlerExecutors["reject"],
     ) {
-        const id = crypto.randomUUID();
-        IPCHandler.executors.set(id, { resolve: res, reject: rej, id });
-        return id;
+        const request_id = crypto.randomUUID();
+        IPCHandler.executors.set(request_id, {
+            resolve: res,
+            reject: rej,
+            request_id,
+        });
+        return request_id;
     }
 
     static listen() {
         document.addEventListener("ipc-response", (event: Event) => {
             const customEvent = event as CustomEvent;
             // console.log(customEvent.detail);
-            const { id, data, error } = customEvent.detail;
-            const executor = IPCHandler.executors.get(id);
+            const { request_id, data, error } = customEvent.detail;
+            const executor = IPCHandler.executors.get(request_id);
 
             if (data) {
                 executor?.resolve(parseJson(data));
-                //   console.log("Resolved: " + data, "Id: " + id);
             }
             if (error) {
                 executor?.reject(new RustError(error));
-                //    console.log("Rejected: " + String(error), "Id: " + id);
             }
         });
     }
