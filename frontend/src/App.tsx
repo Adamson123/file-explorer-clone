@@ -95,8 +95,8 @@ function App() {
             url: "http://localhost:5173/",
             width: 600,
             height: 500,
-            decoration: true,
-            icon_path: "",
+            decoration: false,
+            icon_path: ""
         });
 
         console.log(req);

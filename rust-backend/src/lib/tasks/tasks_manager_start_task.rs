@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use serde_json::{json, Value};
+use tao::event;
 use tokio::{
     sync::mpsc::{channel, Receiver, Sender},
     task::JoinHandle,
@@ -88,13 +89,14 @@ impl TaskManager {
     pub fn start_task(
         &mut self,
         task_name: &str,
-        task_id: &str,
+        //  task_id: &str,
+        event_name: &str,
         window_key: &str,
         start_msg: &Option<Value>,
         globals: Arc<Globals>,
     ) -> Result<String, String> {
-        let event_name = format!("{task_name}_{task_id}");
-
+        // let event_name = format!("{task_name}_{task_id}");
+        let event_name = event_name.to_string();
         if self.active_tasks.contains_key(&event_name) {
             return Err(format!("{event_name} is already running..."));
         }
@@ -153,7 +155,8 @@ impl TaskManager {
             },
         );
 
-        println!("{event_name} started...");
-        Ok(String::from(event_name))
+        let msg = format!("{event_name} started...");
+        println!("{msg}");
+        Ok(msg)
     }
 }

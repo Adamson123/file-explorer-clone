@@ -16,7 +16,7 @@ function useStartTask(task_name: string) {
     // let called_ref = useRef(false);
 
     const task_id_ref = useRef(crypto.randomUUID());
-    let event_name_ref = useRef(`${task_name}_${task_id_ref.current}`);
+    const event_name_ref = useRef(`${task_name}_${task_id_ref.current}`);
 
     const listeners_ref = useRef<{
         message_listeners: ListenerCallback[];

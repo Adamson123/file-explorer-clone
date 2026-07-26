@@ -69,7 +69,6 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
 
     let command = {
         let commands_register = globals.commands_register.lock().await;
-
         commands_register.invoke_command(&cmd, &args, globals.clone())
     };
 

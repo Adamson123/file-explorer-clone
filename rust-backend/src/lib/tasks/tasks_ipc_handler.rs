@@ -34,29 +34,32 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
         tokio::task::spawn({
             let task_name = ipc_msg.task_name.clone();
             let id = ipc_msg.id.clone();
-            let task_id = ipc_msg.task_id.clone();
+            // let task_id = ipc_msg.task_id.clone();
 
-            let args = ipc_msg.args; //body.get("args").cloned();
+            let args = ipc_msg.args;
             let window_key = window_key.to_string();
             let globals = globals.clone();
+            let event_name = ipc_msg.event_name.clone();
 
             async move {
-                let event_name = { globals.tasks_manager.lock().await }.start_task(
-                    &task_name,
-                    &task_id,
-                    &window_key,
-                    &Some(args),
-                    globals.clone(),
-                );
+                let res = {
+                    globals.tasks_manager.lock().await.start_task(
+                        &task_name,
+                        &event_name,
+                        &window_key,
+                        &Some(args),
+                        globals.clone(),
+                    )
+                };
 
-                let (error, event_name) = if event_name.is_ok() {
-                    ("".into(), event_name.unwrap())
+                let (error, res) = if res.is_ok() {
+                    ("".into(), res.unwrap())
                 } else {
-                    (event_name.err().unwrap_or(String::new()), "".into())
+                    (res.err().unwrap_or(String::new()), "".into())
                     //TODO: Maybe also fire frontend task error eventlistener
                 };
 
-                let response = json!({"id":id, "error": error, "data": event_name  });
+                let response = json!({"id":id, "error": error, "data": res  });
                 let js_event = construct_js_event("ipc-response", &response);
 
                 let _ = globals.event_loop_proxy.send_event(UserEvent::WebviewEvent(
@@ -72,13 +75,15 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
     if ipc_msg.action == "task_msg" {
         tokio::task::spawn({
             let event_name = ipc_msg.event_name.clone();
-            let args = ipc_msg.args.clone(); //body.get("args").cloned();
+            let args = ipc_msg.args.clone();
             let globals = globals.clone();
             let window_key = window_key.to_string();
 
             async move {
-                let tasks_manager = { globals.tasks_manager.lock().await };
-                let sender = tasks_manager.send_msg(&event_name, &args);
+                let sender = {
+                    let tasks_manager = globals.tasks_manager.lock().await;
+                    tasks_manager.send_msg(&event_name, &args)
+                };
 
                 if let Some(s) = sender {
                     s.await;
@@ -108,8 +113,11 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let window_key = window_key.to_string();
 
             async move {
-                let mut tasks_manager = { globals.tasks_manager.lock().await };
-                let res = tasks_manager.end_task(&event_name);
+                let res = {
+                    let mut tasks_manager = globals.tasks_manager.lock().await;
+                    tasks_manager.end_task(&event_name)
+                };
+                // 👆 The guard is dropped HERE (at the end of the block).
                 if let Err(e) = res {
                     let js_event =
                         construct_js_event(&format!("{}_error", event_name), &json!({"error": e}));
@@ -132,8 +140,10 @@ pub fn tasks_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) 
             let window_key = window_key.to_string();
             async move {
                 println!("kill all tasks with window_key: {window_key}");
-                let mut tasks_manager = { globals.tasks_manager.lock().await };
-                tasks_manager.end_window_tasks(&window_key)
+                {
+                    let mut tasks_manager = globals.tasks_manager.lock().await;
+                    tasks_manager.end_window_tasks(&window_key);
+                };
             }
         });
         return;

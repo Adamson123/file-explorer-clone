@@ -23,7 +23,7 @@ pub struct ActiveTask {
 }
 
 impl ActiveTask {
-    pub fn send_msg(&self, msg: &Value) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    pub fn send_msg(&self, msg: &Value) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
         let msg = msg.clone();
 
         let sender = if get_field_as_string(&msg, "sender") == "manager" {
@@ -32,11 +32,12 @@ impl ActiveTask {
             MsgSender::Listener
         };
 
-        let f = self.sender.send(TaskMsg {
-            data: msg.get("data").unwrap_or(&json!({})).clone(),
-            sender,
-        });
+        let mpsc_sender = self.sender.clone();
         Box::pin(async move {
+            let f = mpsc_sender.send(TaskMsg {
+                data: msg.get("data").unwrap_or(&json!({})).clone(),
+                sender,
+            });
             let _ = f.await;
         })
     }
@@ -59,7 +60,7 @@ impl TaskManager {
         &self,
         event_name: &str,
         msg: &Value,
-    ) -> Option<Pin<Box<dyn Future<Output = ()> + Send + '_>>> {
+    ) -> Option<Pin<Box<dyn Future<Output = ()> + Send + 'static>>> {
         let active_task = self.active_tasks.get(event_name);
 
         if active_task.is_some() {
