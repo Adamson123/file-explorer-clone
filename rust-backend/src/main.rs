@@ -2,7 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use file_explorer_clone::{
     commands::{
-        create_window, get_dir_contents, log, minimize_window, move_window, set_decoration,
+        create_window, get_dir_contents, log, minimize_window, move_window, resize_window,
+        set_decoration,
     },
     commands_registry::CommandsRegistry,
     globals::Globals,
@@ -28,6 +29,7 @@ async fn main() {
     commands_register.register_command(move_window());
     commands_register.register_command(set_decoration());
     commands_register.register_command(create_window());
+    commands_register.register_command(resize_window());
 
     commands_register.register_command(get_dir_contents());
 

@@ -2,10 +2,23 @@ use wry::http::Request;
 
 use crate::webview_windows_manager::WebViewWindowConfig;
 
+pub enum ResizeDirection {
+    Top,
+    Bottom,
+    Left,
+    Right,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    None,
+}
+
 pub enum WindowEvent {
     Minimize(bool),
     DragWindow,
     HideDecoration(bool),
+    ResizeWindow(ResizeDirection),
 }
 
 pub enum WebviewEvent {

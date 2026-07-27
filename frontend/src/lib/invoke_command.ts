@@ -10,7 +10,7 @@ type CMD =
 
 const invoke_command = async <T = any>(
     cmd: CMD,
-    args: any = "",
+    args: { [key: string]: any } | undefined = undefined,
 ): Promise<T | undefined> => {
     const response = await send_ipc_msg_with_promise<CommandIPCMsg>({
         msg_type: "command",

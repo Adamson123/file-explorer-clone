@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use crate::{
     command, command_struct,
     globals::Globals,
-    user_events::{UserEvent, WindowEvent},
+    user_events::{ResizeDirection, UserEvent, WindowEvent},
     utils::{get_field_as_bool, get_field_as_string, put_value_in_result},
     webview_windows_manager::WebViewWindowConfig,
 };
@@ -32,10 +32,10 @@ command_struct!(move_window, |a, g| {
 });
 
 command_struct!(set_decoration, |a, g| {
-    let minimize = get_field_as_bool(&a, "minimize");
+    let decoration = get_field_as_bool(&a, "decoration");
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         get_field_as_string(a, "window_key"),
-        WindowEvent::HideDecoration(minimize),
+        WindowEvent::HideDecoration(decoration),
     ));
     Ok(String::from("Moving window"))
 });
@@ -97,3 +97,26 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
 }
 
 command_struct!(get_dir_contents, |a, g| { get_dir_c(a, g).await });
+
+command_struct!(resize_window, |a, g| {
+    let direction = get_field_as_string(&a, "direction");
+
+    let direction = match direction.as_str() {
+        "Left" => ResizeDirection::Left,
+        "Right" => ResizeDirection::Right,
+        "Top" => ResizeDirection::Top,
+        "Bottom" => ResizeDirection::Bottom,
+        "TopLeft" => ResizeDirection::TopLeft,
+        "TopRight" => ResizeDirection::TopRight,
+        "BottomLeft" => ResizeDirection::BottomLeft,
+        "BottomRight" => ResizeDirection::BottomRight,
+        _ => ResizeDirection::None,
+    };
+
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::ResizeWindow(direction),
+    ));
+
+    Ok(String::from("Resizing window"))
+});

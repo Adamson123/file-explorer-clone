@@ -1,10 +1,15 @@
 use std::sync::Arc;
-use tao::window::Window;
-use wry::{http::Request, WebView, WebViewBuilder};
+use tao::{
+    dpi::{LogicalPosition, LogicalSize},
+    window::Window,
+};
+use wry::{http::Request, Rect, WebView, WebViewBuilder};
 
 use crate::{globals::Globals, user_events::UserEvent, webview_windows_manager::WebViewConfig};
 
 pub type IPCHandler = Arc<dyn Fn(Request<String>) + 'static>;
+
+pub const WEBVIEW_GAP: f64 = 2.0;
 
 pub fn create_webview(
     window: &Window,
@@ -77,7 +82,20 @@ pub fn create_webview(
         .build(window);
 
     match webview {
-        Ok(wv) => Ok(wv),
+        Ok(wv) => {
+            //If resizeable and decoration is false, then we need to set the webview bounds to be smaller than the window size, otherwise the webview will cover the window border and make it look like the window is not resizeable.
+            if window.is_resizable() && !window.is_decorated() {
+                let _ = wv.set_bounds(Rect {
+                    position: LogicalPosition::new(WEBVIEW_GAP, WEBVIEW_GAP).into(),
+                    size: LogicalSize::new(
+                        webview_config.width as f64 - WEBVIEW_GAP * 2.0,
+                        webview_config.height as f64 - WEBVIEW_GAP * 2.0,
+                    )
+                    .into(),
+                });
+            }
+            Ok(wv)
+        }
         Err(e) => Err(e.to_string()),
     }
 }

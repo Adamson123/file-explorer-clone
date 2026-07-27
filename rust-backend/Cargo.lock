@@ -520,6 +520,7 @@ dependencies = [
  "tao",
  "tokio",
  "uuid",
+ "windows",
  "wry",
 ]
 

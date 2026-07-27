@@ -48,6 +48,11 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
     }
     let ipc_msg = ipc_msg.unwrap();
 
+    // println!(
+    //     "Received IPC message: {:?}, parsed to: {:?}",
+    //     body, ipc_msg.args
+    // );
+
     let mut args_map = ipc_msg
         .args
         .as_object()
@@ -55,6 +60,11 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
         .unwrap_or_else(|| serde_json::Map::new());
     // 2. Insert the new key into the Map
     args_map.insert("window_key".to_string(), json!(window_key));
+
+    // println!(
+    //     "IPC message after adding window_key: {:?}",
+    //     serde_json::Value::Object(args_map.clone())
+    // );
 
     // 3. Convert the Map into a Value (Object variant)
     let args: Value = Value::Object(args_map);

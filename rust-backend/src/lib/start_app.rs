@@ -1,11 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
 use tao::{
+    dpi::{LogicalPosition, LogicalSize},
     event::{Event, WindowEvent},
     event_loop::{EventLoop, EventLoopWindowTarget},
 };
 
+use wry::Rect;
+
 use crate::{
+    create_webview::WEBVIEW_GAP,
     globals::Globals,
     user_events::UserEvent,
     user_events_handler::user_events_handler,
@@ -35,10 +39,10 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
             url: "http://localhost:5173".to_string(),
             width: 800,
             height: 600,
-            decoration: true,
             icon_path: String::new(),
-            transparent: false,
-            shadow: true,
+            transparent: true,
+            shadow: false,
+            decoration: false,
             resizable: true,
         },
     };
@@ -88,6 +92,32 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
                         tokio::task::spawn(async move {
                             task_manager.lock().await.end_multiple_window_tasks(&keys)
                         });
+                    }
+                }
+
+                Event::WindowEvent {
+                    window_id,
+                    event: WindowEvent::Resized(size),
+                    ..
+                } => {
+                    if let Some(webview) =
+                        webview_windows_manager.get_webview_window_by_tao_window_id(window_id)
+                    {
+                        //If resizeable and decoration is false, then we need to set the webview bounds to be smaller than the window size, otherwise the webview will cover the window border and make it look like the window is not resizeable.
+
+                        if webview.window.is_resizable() && !webview.window.is_decorated() {
+                            webview
+                                .webview
+                                .set_bounds(Rect {
+                                    position: LogicalPosition::new(WEBVIEW_GAP, WEBVIEW_GAP).into(),
+                                    size: LogicalSize::new(
+                                        size.width as f64 - WEBVIEW_GAP * 2.0,
+                                        size.height as f64 - WEBVIEW_GAP * 2.0,
+                                    )
+                                    .into(),
+                                })
+                                .unwrap();
+                        }
                     }
                 }
 

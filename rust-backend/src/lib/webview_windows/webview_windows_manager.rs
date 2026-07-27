@@ -44,6 +44,8 @@ pub struct WindowConfig {
 pub struct WebViewConfig {
     pub url: String,
     pub transparent: bool,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl WebViewWindowConfig {
@@ -64,6 +66,8 @@ impl WebViewWindowConfig {
         WebViewConfig {
             url: self.url.clone(),
             transparent: self.transparent,
+            width: self.width,
+            height: self.height,
         }
     }
 }

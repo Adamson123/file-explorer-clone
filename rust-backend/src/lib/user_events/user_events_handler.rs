@@ -1,11 +1,19 @@
 use serde_json::{json, Value};
+use tao::platform::windows::WindowExtWindows;
+use windows::Win32::Foundation::{HWND, WPARAM};
+use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
+use windows::Win32::UI::WindowsAndMessaging::{
+    SendMessageW, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTLEFT, HTRIGHT, HTTOP, HTTOPLEFT,
+    HTTOPRIGHT, WM_NCLBUTTONDOWN,
+};
 
 use crate::commands_ipc_handler::commands_ipc_handler;
 use crate::start_app::MainThreadStates;
 use crate::tasks_ipc_handler::tasks_ipc_handler;
-use crate::user_events::{UserEvent, WebviewEvent, WindowEvent};
+use crate::user_events::{ResizeDirection, UserEvent, WebviewEvent, WindowEvent};
 use crate::utils::get_field_as_string;
 use crate::webview_windows_manager::WebViewWindowSetup;
+use std::os::raw::c_void;
 use std::sync::Arc;
 
 pub fn user_events_handler(
@@ -89,7 +97,36 @@ pub fn user_events_handler(
                     webview_window.window.set_decorations(!hide);
                 }
             }
+
+            //TODO: Might be removed
+            WindowEvent::ResizeWindow(direction) => {
+                let ht = match direction {
+                    ResizeDirection::Top => HTTOP,
+                    ResizeDirection::Bottom => HTBOTTOM,
+                    ResizeDirection::Left => HTLEFT,
+                    ResizeDirection::Right => HTRIGHT,
+                    ResizeDirection::TopLeft => HTTOPLEFT,
+                    ResizeDirection::TopRight => HTTOPRIGHT,
+                    ResizeDirection::BottomLeft => HTBOTTOMLEFT,
+                    ResizeDirection::BottomRight => HTBOTTOMRIGHT,
+                    ResizeDirection::None => return,
+                };
+
+                let webview_window = main_thread_states
+                    .webview_windows_manager
+                    .get_webview_window(window_key);
+
+                if let Some(webview_window) = webview_window {
+                    unsafe {
+                        let hwnd = HWND(webview_window.window.hwnd() as *mut c_void);
+
+                        let _ = ReleaseCapture();
+                        SendMessageW(hwnd, WM_NCLBUTTONDOWN, Some(WPARAM(ht as usize)), None);
+                    }
+                }
+            }
         },
+
         UserEvent::WebviewEvent(window_key, webview_event) => match webview_event {
             WebviewEvent::EvaluateScript(script) => {
                 //If main_window is not expecting any reply, this will not reflect there.
