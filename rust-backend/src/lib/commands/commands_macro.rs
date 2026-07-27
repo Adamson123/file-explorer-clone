@@ -1,7 +1,10 @@
 #[macro_export]
 macro_rules! command {
     ($name:ident, |$args:ident, $globals:ident| $body:block) => {
-        pub fn $name<'a>($args: &'a Value, $globals: Arc<Globals>) -> BoxFuture<'a> {
+        pub fn $name<'a>(
+            $args: &'a serde_json::Value,
+            $globals: std::sync::Arc<$crate::globals::Globals>,
+        ) -> $crate::commands_registry::CommandBoxFuture<'a> {
             Box::pin(async move {
                 let res = { $body };
                 res
@@ -13,8 +16,11 @@ macro_rules! command {
 #[macro_export]
 macro_rules! command_struct {
     ($name:ident, |$args:ident, $globals:ident| $body:block) => {
-        pub fn $name() -> Command {
-            fn fnt<'a>($args: &'a Value, $globals: Arc<Globals>) -> BoxFuture<'a> {
+        pub fn $name() -> $crate::commands_registry::Command {
+            fn fnt<'a>(
+                $args: &'a serde_json::Value,
+                $globals: std::sync::Arc<$crate::globals::Globals>,
+            ) -> $crate::commands_registry::CommandBoxFuture<'a> {
                 Box::pin(async move {
                     let res = { $body };
                     res
@@ -23,9 +29,9 @@ macro_rules! command_struct {
 
             let name = stringify!($name).to_string();
 
-            Command {
+            $crate::commands_registry::Command {
                 name,
-                function: Arc::new(fnt),
+                function: std::sync::Arc::new(fnt),
             }
         }
     };

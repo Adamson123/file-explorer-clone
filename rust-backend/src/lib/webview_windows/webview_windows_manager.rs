@@ -18,24 +18,26 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WebViewWindowConfig {
     pub window_name: String,
+    pub icon_path: String,
     pub url: String,
     pub width: i32,
     pub height: i32,
     pub decoration: bool,
     pub transparent: bool,
-    pub icon_path: String,
     pub shadow: bool,
+    pub resizable: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct WindowConfig {
     pub window_name: String,
+    pub icon_path: String,
     pub width: i32,
     pub height: i32,
     pub decoration: bool,
     pub transparent: bool,
-    pub icon_path: String,
     pub shadow: bool,
+    pub resizable: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +56,7 @@ impl WebViewWindowConfig {
             transparent: self.transparent,
             icon_path: self.icon_path.clone(),
             shadow: self.shadow,
+            resizable: self.resizable,
         }
     }
 

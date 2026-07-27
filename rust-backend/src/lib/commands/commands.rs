@@ -4,7 +4,6 @@ use serde_json::{json, Value};
 
 use crate::{
     command, command_struct,
-    commands_registry::{BoxFuture, Command},
     globals::Globals,
     user_events::{UserEvent, WindowEvent},
     utils::{get_field_as_bool, get_field_as_string, put_value_in_result},

@@ -39,6 +39,7 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
             icon_path: String::new(),
             transparent: false,
             shadow: true,
+            resizable: true,
         },
     };
 

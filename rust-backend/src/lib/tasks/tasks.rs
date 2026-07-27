@@ -1,15 +1,8 @@
 use std::time::Duration;
 
+use crate::{commands::get_dir_c, repeat_while, task, utils::get_field_as_string};
 use serde_json::{json, Value};
 use tokio::time::sleep;
-
-use crate::{commands::get_dir_c, repeat_while, task, utils::get_field_as_string};
-use std::sync::Arc;
-
-use crate::{
-    task_args::{TaskArgs, TaskHandle},
-    tasks_manager::{Task, TaskBoxFuture},
-};
 
 task!(monitor_dir, |a| {
     println!("Starting Monitor...");

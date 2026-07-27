@@ -3,9 +3,9 @@ use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use crate::globals::Globals;
 
-pub type BoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send>>;
+pub type CommandBoxFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + 'a + Send>>;
 pub type CommandFnType =
-    Arc<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> BoxFuture<'a> + Send + Sync>;
+    Arc<dyn for<'a> Fn(&'a Value, Arc<Globals>) -> CommandBoxFuture<'a> + Send + Sync>;
 
 pub struct Command {
     pub name: String,
@@ -30,7 +30,7 @@ impl CommandsRegistry {
         name: &str,
         args: &'a Value,
         globals: Arc<Globals>,
-    ) -> Result<BoxFuture<'a>, String> {
+    ) -> Result<CommandBoxFuture<'a>, String> {
         let f = self.get_command(name);
         match f {
             Some(f) => Ok(f(args, globals)),

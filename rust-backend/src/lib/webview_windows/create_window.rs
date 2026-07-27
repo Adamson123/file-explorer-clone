@@ -1,4 +1,5 @@
 use tao::{
+    dpi::LogicalSize,
     event_loop::EventLoopWindowTarget,
     platform::windows::WindowBuilderExtWindows,
     window::{Window, WindowBuilder},
@@ -23,6 +24,11 @@ pub fn create_window(
         .with_transparent(window_config.transparent)
         .with_decorations(window_config.decoration)
         .with_undecorated_shadow(window_config.shadow)
+        .with_resizable(window_config.resizable)
+        .with_inner_size(LogicalSize::new(
+            window_config.width as f64,
+            window_config.height as f64,
+        ))
         .build(event_loop);
 
     match window {

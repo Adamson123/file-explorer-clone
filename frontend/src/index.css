@@ -74,10 +74,11 @@ Make scrollbar transparent
     box-sizing: border-box;
 }
 
-/* body {
+body {
     margin: 0;
-    /* background-color: transparent;
-} */
+    /* background-color: transparent;*/
+    /* overflow: hidden; */
+}
 
 h1,
 h2 {

@@ -23,6 +23,7 @@ const webview_window_config = {
     icon_path: "",
     transparent: false,
     shadow: true,
+    resizable: true,
 };
 
 const create_window = async (

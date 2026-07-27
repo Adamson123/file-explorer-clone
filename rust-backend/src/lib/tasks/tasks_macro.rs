@@ -5,17 +5,17 @@ macro_rules! task {
         |$args:ident|
         $body:block
     ) => {
-        pub fn $name() -> Task {
-            fn fnt(mut $args: TaskArgs) -> TaskBoxFuture {
+        pub fn $name() -> $crate::tasks_manager::Task {
+            fn fnt(mut $args: $crate::task_args::TaskArgs) -> $crate::tasks_manager::TaskBoxFuture {
                 Box::pin(async move {
                     let res = { $body };
                     res
                 })
             }
 
-            Task {
+            $crate::tasks_manager::Task {
                 name: stringify!($name).to_string(),
-                function: Arc::new(fnt),
+                function: std::sync::Arc::new(fnt),
             }
         }
     };
@@ -28,19 +28,20 @@ macro_rules! repeat_while {
         $a:expr,
         |$var:ident| $body:block
     ) => {
-
         let mut $var = 0;
+
         while $condition {
             match $a.get_task_state().await {
-            TaskHandle::Run => {}
-            TaskHandle::Pause => {
-              //  sleep(Duration::from_millis(1)).await;
-                continue;
-            }
-            TaskHandle::Cancel => break,
-        }
+                $crate::task_args::TaskHandle::Run => {}
 
-            $body
+                $crate::task_args::TaskHandle::Pause => {
+                    continue;
+                }
+
+                $crate::task_args::TaskHandle::Cancel => break,
+            }
+
+            $body;
 
             $var += 1;
         }
@@ -55,17 +56,19 @@ macro_rules! repeat_for {
         |$var:ident| $body:block
     ) => {
         let mut $var = 0;
+
         while $var < $count {
             match $a.get_task_state().await {
-            TaskHandle::Run => {}
-            TaskHandle::Pause => {
-              //  sleep(Duration::from_millis(1)).await;
-                continue;
-            }
-            TaskHandle::Cancel => break,
-        }
+                $crate::task_args::TaskHandle::Run => {}
 
-            $body
+                $crate::task_args::TaskHandle::Pause => {
+                    continue;
+                }
+
+                $crate::task_args::TaskHandle::Cancel => break,
+            }
+
+            $body;
 
             $var += 1;
         }

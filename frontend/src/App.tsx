@@ -91,12 +91,15 @@ function App() {
         // //  `file:///${pathInput}`, //"file:///C:/Users/Admin/Downloads/rust_memory_layouts.txt",
         // console.log(req);
         const req = await window_commands.create_window({
-            window_name: "New Window from me",
-            url: "http://localhost:5173/",
-            width: 600,
-            height: 500,
+            window_name: "New Window",
+            url: "http://localhost:5173",
+            width: 370,
+            height: 130,
             decoration: false,
+            resizable: false,
             icon_path: "",
+            shadow: false,
+            transparent: true,
         });
 
         console.log(req);
