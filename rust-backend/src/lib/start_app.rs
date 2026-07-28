@@ -4,13 +4,17 @@ use tao::{
     dpi::{LogicalPosition, LogicalSize},
     event::{Event, WindowEvent},
     event_loop::{EventLoop, EventLoopWindowTarget},
+    platform::windows::WindowExtWindows,
 };
 
+use windows::Win32::Foundation::HWND;
 use wry::Rect;
 
 use crate::{
+    attach_to_desktop::attach_to_desktop,
     create_webview::WEBVIEW_GAP,
     globals::Globals,
+    reserve_desktop_space::reserve_desktop_space,
     user_events::UserEvent,
     user_events_handler::user_events_handler,
     webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup},
@@ -37,7 +41,7 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
         window_config: WebViewWindowConfig {
             window_name: "Main Window".to_string(),
             url: "http://localhost:5173".to_string(),
-            width: 800,
+            width: 900,
             height: 600,
             icon_path: String::new(),
             transparent: true,
@@ -53,8 +57,16 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
         eprintln!("Failed to create main window: {}", e);
         return;
     }
-
     let main_window_key = main_window_key.unwrap();
+
+    // let main_window = webview_windows_manager
+    //     .get_webview_window(&main_window_key)
+    //     .unwrap();
+
+    // unsafe {
+    //     let hwnd = HWND(main_window.window.hwnd() as *mut std::ffi::c_void);
+    //     attach_to_desktop(hwnd).unwrap();
+    // }
 
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {
@@ -118,6 +130,9 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
                                 })
                                 .unwrap();
                         }
+
+                        //   let hwnd = HWND(webview.window.hwnd() as *mut std::ffi::c_void);
+                        //  set_window_radius(hwnd, size.width as i32, size.height as i32);
                     }
                 }
 

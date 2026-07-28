@@ -1,5 +1,68 @@
+import { LayoutListIcon, LucideLayoutGrid, RefreshCcw } from "lucide-react";
+
 const RightSection = () => {
-    return <section className="bg-red-500 grow h-full">RightSection</section>;
+    return (
+        <section className="bg-primary grow h-full pl-5 pr-2">
+            <div className="flex items-center gap-5 border-b border-gray-700/50">
+                {/* Layout */}
+                <div className="flex gap-2">
+                    <LucideLayoutGrid className="text-gray-400 size-5" />
+                    <LayoutListIcon className="text-gray-700 size-5" />
+                </div>
+                {/* Input */}
+                {/* bg-[#242323] */}
+                <div
+                    className="grow flex items-center  px-3
+                 rounded-sm  outline-gray-700/50 focus-within:outline-gray-500/50"
+                >
+                    <img src="./assets/folder.svg" className="size-4.5" />
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        className="bg-transparent text-sm text-gray-400 px-2 py-2 w-full outline-none"
+                    />
+                    <RefreshCcw className="text-gray-400 size-4.5" />
+                </div>
+                {/* Content
+                <div className="mt-4">
+                    <p className="text-gray-400 text-sm">No items to display</p>
+                </div> */}
+            </div>
+            {/* flex-wrap flex gap-4 justify-baseline mt-7 */}
+            <div className="grid grid-cols-[repeat(auto-fill,_minmax(95px,_1fr))] gap-4  mt-7">
+                {/* <div className="flex flex-col items-center">
+                    <img src="./assets/folder.svg" className="size-20" />
+                    <p className="text-gray-400 text-sm">AppLogs</p>
+                </div> */}
+
+                {[
+                    "Applogs",
+                    "Profile",
+                    "Settings",
+                    "Temp",
+                    "Windows",
+                    "Pictures",
+                    "System32",
+                    "System",
+                    "Program Files",
+                    "Program Files (x86)",
+                    "Users",
+                    "Documents",
+                    "Downloads",
+                ].map((folderName) => (
+                    <div
+                        key={folderName}
+                        className="flex flex-col items-center"
+                    >
+                        <img src="./assets/folder.svg" className="size-18" />
+                        <p className="text-gray-400 text-xs text-center">
+                            {folderName}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
 };
 
 export default RightSection;
