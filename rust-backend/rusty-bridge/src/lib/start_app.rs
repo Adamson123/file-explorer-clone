@@ -11,7 +11,7 @@ use wry::Rect;
 use crate::{
     create_webview::WEBVIEW_GAP,
     globals::Globals,
-    user_events::UserEvent,
+    user_events::{CustomEventHandler, UserEvent},
     user_events_handler::user_events_handler,
     webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup},
 };
@@ -22,7 +22,12 @@ pub struct MainThreadStates<'a> {
     pub webview_windows_manager: &'a mut WebViewWindowManager,
 }
 
-pub fn start_app(url: &str, event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
+pub fn start_app(
+    url: &str,
+    event_loop: EventLoop<UserEvent>,
+    globals: Arc<Globals>,
+    custom_event_handler: Arc<CustomEventHandler>,
+) {
     let _globals_clone = Arc::clone(&globals);
     let globals_clone_2 = Arc::clone(&globals);
 
@@ -55,18 +60,10 @@ pub fn start_app(url: &str, event_loop: EventLoop<UserEvent>, globals: Arc<Globa
     }
     let main_window_key = main_window_key.unwrap();
 
-    // let main_window = webview_windows_manager
-    //     .get_webview_window(&main_window_key)
-    //     .unwrap();
-
-    // unsafe {
-    //     let hwnd = HWND(main_window.window.hwnd() as *mut std::ffi::c_void);
-    //     attach_to_desktop(hwnd).unwrap();
-    // }
-
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {
             *control_flow = tao::event_loop::ControlFlow::Wait;
+            let custom_event_handler_clone = Arc::clone(&custom_event_handler);
 
             match &event {
                 Event::WindowEvent {
@@ -139,7 +136,12 @@ pub fn start_app(url: &str, event_loop: EventLoop<UserEvent>, globals: Arc<Globa
                         webview_windows_manager: &mut webview_windows_manager,
                     };
 
-                    user_events_handler(&e, &mut main_thread_states, &main_window_key);
+                    user_events_handler(
+                        &e,
+                        &mut main_thread_states,
+                        custom_event_handler_clone,
+                        &main_window_key,
+                    );
                 }
                 _ => {}
             }

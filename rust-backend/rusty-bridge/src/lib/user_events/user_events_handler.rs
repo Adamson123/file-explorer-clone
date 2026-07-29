@@ -10,7 +10,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use crate::commands_ipc_handler::commands_ipc_handler;
 use crate::start_app::MainThreadStates;
 use crate::tasks_ipc_handler::tasks_ipc_handler;
-use crate::user_events::{ResizeDirection, UserEvent, WebviewEvent, WindowEvent};
+use crate::user_events::{
+    CustomEventHandler, ResizeDirection, UserEvent, WebviewEvent, WindowEvent,
+};
 use crate::utils::get_field_as_string;
 use crate::webview_windows_manager::{WebViewWindow, WebViewWindowSetup};
 use std::os::raw::c_void;
@@ -19,6 +21,7 @@ use std::sync::Arc;
 pub fn user_events_handler(
     event: &UserEvent,
     main_thread_states: &mut MainThreadStates,
+    custom_event_handler: Arc<CustomEventHandler>,
     _main_window_key: &str,
 ) {
     // let _main_webview_window = main_thread_states
@@ -153,5 +156,8 @@ pub fn user_events_handler(
                 }
             }
         },
+        UserEvent::CustomEvent(e) => {
+            custom_event_handler(e, main_thread_states);
+        }
     }
 }

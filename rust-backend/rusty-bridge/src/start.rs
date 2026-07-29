@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, sync::Arc};
 
 use tao::event_loop::EventLoopBuilder;
 use tokio::sync::Mutex;
@@ -9,9 +9,9 @@ use crate::{
     },
     commands_registry::{Command, CommandsRegistry},
     globals::Globals,
-    start_app::start_app,
+    start_app::{start_app, MainThreadStates},
     tasks_manager::{Task, TaskManager},
-    user_events::UserEvent,
+    user_events::{CustomEventHandler, UserEvent},
 };
 
 // pub struct RustyBridge {
@@ -23,6 +23,7 @@ pub struct RustyBridgeBuilder {
     pub commands_registry: Option<CommandsRegistry>,
     pub task_manager: Option<TaskManager>,
     pub url: String,
+    pub custom_event_handler: Option<CustomEventHandler>,
 }
 
 //TODO: Allow to add custom user event listeners
@@ -42,6 +43,7 @@ impl RustyBridgeBuilder {
         Self {
             commands_registry: Some(commands_registry),
             task_manager: Some(task_manager),
+            custom_event_handler: Some(Box::new(move |_e, _m| {})),
             url: String::new(),
         }
     }
@@ -79,6 +81,14 @@ impl RustyBridgeBuilder {
         self
     }
 
+    pub fn handle_custom_event<F>(mut self, custom_event_handler: F) -> Self
+    where
+        F: Fn(&Box<dyn Any + Send>, &mut MainThreadStates) + 'static,
+    {
+        self.custom_event_handler = Some(Box::new(custom_event_handler));
+        self
+    }
+
     pub fn start(&mut self) {
         let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
         let proxy = event_loop.create_proxy();
@@ -89,6 +99,7 @@ impl RustyBridgeBuilder {
             event_loop_proxy: proxy,
         };
         let globals = Arc::new(globals);
-        start_app(&self.url, event_loop, globals);
+        let custom_event_handler = Arc::new(self.custom_event_handler.take().unwrap());
+        start_app(&self.url, event_loop, globals, custom_event_handler);
     }
 }

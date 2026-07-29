@@ -1,7 +1,23 @@
 use std::sync::Arc;
 
-use rusty_bridge::{command_struct, globals::Globals, utils::get_field_as_string};
+use rusty_bridge::{
+    command_struct, globals::Globals, user_events::UserEvent, utils::get_field_as_string,
+};
 use serde_json::{json, Value};
+
+pub enum CustomEvent {
+    LogWindowKey,
+}
+
+command_struct!(log_window_key, |a, g| {
+    println!("Logging window keys from the command handler...");
+
+    g.event_loop_proxy
+        .send_event(UserEvent::CustomEvent(Box::new(CustomEvent::LogWindowKey)))
+        .map_err(|e| e.to_string())?;
+
+    Ok(String::new())
+});
 
 pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
     let path = get_field_as_string(&a, "path");
