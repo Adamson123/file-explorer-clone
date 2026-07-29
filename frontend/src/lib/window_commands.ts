@@ -43,6 +43,14 @@ const minimize_window = async (): Promise<void> => {
     return await invoke_command("minimize_window");
 };
 
+const maximize_window = async (): Promise<void> => {
+    return await invoke_command("maximize_window");
+};
+
+const restore_window = async (): Promise<void> => {
+    return await invoke_command("restore_window");
+};
+
 const move_window = async (): Promise<void> => {
     return await invoke_command("move_window");
 };
@@ -76,6 +84,8 @@ const window_commands = {
     set_decoration,
     resize_window,
     close_window,
+    maximize_window,
+    restore_window,
 };
 
 export default window_commands;

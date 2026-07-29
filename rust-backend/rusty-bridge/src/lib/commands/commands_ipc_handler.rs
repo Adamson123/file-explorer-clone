@@ -36,8 +36,13 @@ pub async fn send_ipc_response(
 
     let _ = proxy.send_event(UserEvent::WebviewEvent(
         window_key.into(),
-        WebviewEvent::EvaluateScript(js_event),
+        WebviewEvent::EvaluateScript(js_event.clone()),
     ));
+
+    // println!(
+    //     "Sent IPC response for request_id {}: {:?}, js_event: {}",
+    //     request_id, json_response, js_event
+    // );
 }
 
 pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {

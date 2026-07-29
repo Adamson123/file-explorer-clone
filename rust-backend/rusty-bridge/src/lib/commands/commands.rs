@@ -15,7 +15,23 @@ command!(log, |a, _g| {
 command_struct!(minimize_window, |a, g| {
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         get_field_as_string(a, "window_key"),
-        WindowEvent::Minimize(true),
+        WindowEvent::MinimizeWindow,
+    ));
+    Ok(String::new())
+});
+
+command_struct!(maximize_window, |a, g| {
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::MaximizeWindow,
+    ));
+    Ok(String::new())
+});
+
+command_struct!(restore_window, |a, g| {
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::RestoreWindow,
     ));
     Ok(String::new())
 });

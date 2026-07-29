@@ -22,11 +22,14 @@ pub struct MainThreadStates<'a> {
     pub webview_windows_manager: &'a mut WebViewWindowManager,
 }
 
+pub type WindowEventHandler = Box<dyn Fn(&Event<'_, UserEvent>, &MainThreadStates)>;
+
 pub fn start_app(
     url: &str,
     event_loop: EventLoop<UserEvent>,
     globals: Arc<Globals>,
     custom_event_handler: Arc<CustomEventHandler>,
+    window_event_handler: Arc<WindowEventHandler>,
 ) {
     let _globals_clone = Arc::clone(&globals);
     let globals_clone_2 = Arc::clone(&globals);
@@ -145,6 +148,16 @@ pub fn start_app(
                 }
                 _ => {}
             }
+
+            //Call the window event handler attached by the user, if any
+            window_event_handler(
+                &event,
+                &MainThreadStates {
+                    event_loop: event_loop,
+                    globals: globals_clone_2.clone(),
+                    webview_windows_manager: &mut webview_windows_manager,
+                },
+            );
         },
     );
 }

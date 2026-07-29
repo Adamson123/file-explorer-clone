@@ -464,6 +464,7 @@ dependencies = [
  "rusty-bridge",
  "serde",
  "serde_json",
+ "tao",
  "tokio",
 ]
 

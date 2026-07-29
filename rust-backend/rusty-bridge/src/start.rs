@@ -1,15 +1,16 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use tao::event_loop::EventLoopBuilder;
+use tao::{event::Event, event_loop::EventLoopBuilder};
 use tokio::sync::Mutex;
 
 use crate::{
     commands::{
-        close_window, create_window, minimize_window, move_window, resize_window, set_decoration,
+        close_window, create_window, maximize_window, minimize_window, move_window, resize_window,
+        restore_window, set_decoration,
     },
     commands_registry::{Command, CommandsRegistry},
     globals::Globals,
-    start_app::{start_app, MainThreadStates},
+    start_app::{start_app, MainThreadStates, WindowEventHandler},
     tasks_manager::{Task, TaskManager},
     user_events::{CustomEventHandler, UserEvent},
 };
@@ -24,6 +25,7 @@ pub struct RustyBridgeBuilder {
     pub task_manager: Option<TaskManager>,
     pub url: String,
     pub custom_event_handler: Option<CustomEventHandler>,
+    pub window_event_handler: Option<WindowEventHandler>,
 }
 
 //TODO: Allow to add custom user event listeners
@@ -45,6 +47,7 @@ impl RustyBridgeBuilder {
             task_manager: Some(task_manager),
             custom_event_handler: Some(Box::new(move |_e, _m| {})),
             url: String::new(),
+            window_event_handler: Some(Box::new(move |_e, _m| {})),
         }
     }
 
@@ -57,6 +60,8 @@ impl RustyBridgeBuilder {
         let mut commands_registry = self.commands_registry.take().unwrap();
         // Window management commands
         commands_registry.register_command(minimize_window());
+        commands_registry.register_command(maximize_window());
+        commands_registry.register_command(restore_window());
         commands_registry.register_command(move_window());
         commands_registry.register_command(set_decoration());
         commands_registry.register_command(create_window());
@@ -89,6 +94,14 @@ impl RustyBridgeBuilder {
         self
     }
 
+    pub fn handle_window_event<F>(mut self, custom_event_handler: F) -> Self
+    where
+        F: Fn(&Event<'_, UserEvent>, &MainThreadStates) + 'static,
+    {
+        self.window_event_handler = Some(Box::new(custom_event_handler));
+        self
+    }
+
     pub fn start(&mut self) {
         let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
         let proxy = event_loop.create_proxy();
@@ -100,6 +113,13 @@ impl RustyBridgeBuilder {
         };
         let globals = Arc::new(globals);
         let custom_event_handler = Arc::new(self.custom_event_handler.take().unwrap());
-        start_app(&self.url, event_loop, globals, custom_event_handler);
+        let window_event_handler = Arc::new(self.window_event_handler.take().unwrap());
+        start_app(
+            &self.url,
+            event_loop,
+            globals,
+            custom_event_handler,
+            window_event_handler,
+        );
     }
 }

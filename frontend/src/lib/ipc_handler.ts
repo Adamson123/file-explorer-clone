@@ -36,6 +36,8 @@ class IPCHandler {
             if (error) {
                 executor?.reject(new RustError(error));
             }
+
+            if (!data && !error) executor?.resolve(parseJson(data));
         });
     }
 }

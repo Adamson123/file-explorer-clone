@@ -86,13 +86,20 @@ pub fn user_events_handler(
             let webview_window = webview_window.unwrap();
 
             match window_event {
-                WindowEvent::Minimize(minimize) => {
+                WindowEvent::MinimizeWindow => {
                     //  let webview_window = get_webview_and_unwrap(&window_key);
-                    if minimize.clone() {
-                        webview_window.window.set_minimized(true);
-                    } else {
-                        webview_window.window.set_minimized(false);
-                    }
+                    // if minimize.clone() {
+                    //     webview_window.window.set_minimized(true);
+                    // } else {
+                    //     webview_window.window.set_minimized(false);
+                    // }
+                    let _ = webview_window.window.set_minimized(true);
+                }
+                WindowEvent::MaximizeWindow => {
+                    let _ = webview_window.window.set_maximized(true);
+                }
+                WindowEvent::RestoreWindow => {
+                    let _ = webview_window.window.set_maximized(false);
                 }
                 WindowEvent::DragWindow => {
                     //  let webview_window = get_webview_and_unwrap(&window_key);

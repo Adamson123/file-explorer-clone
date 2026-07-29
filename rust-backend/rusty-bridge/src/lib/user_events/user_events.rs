@@ -17,7 +17,9 @@ pub enum ResizeDirection {
 }
 
 pub enum WindowEvent {
-    Minimize(bool),
+    MinimizeWindow,
+    MaximizeWindow,
+    RestoreWindow,
     DragWindow,
     HideDecoration(bool),
     ResizeWindow(ResizeDirection),

@@ -34,6 +34,7 @@ const RightSection = () => {
     }, []);
     return (
         <section className="bg-primary grow h-full pl-5 pr-2">
+            {/* Head */}
             <div className="flex items-center gap-5 border-b border-gray-700/50">
                 {/* Layout */}
                 <div className="flex gap-2">
@@ -41,7 +42,6 @@ const RightSection = () => {
                     <LayoutListIcon className="text-gray-700 size-5" />
                 </div>
                 {/* Input */}
-                {/* bg-[#242323] */}
                 <div
                     className="grow flex items-center  px-3
                  rounded-sm  outline-gray-700/50 focus-within:outline-gray-500/50"
@@ -60,12 +60,7 @@ const RightSection = () => {
                 </div> */}
             </div>
             {/* flex-wrap flex gap-4 justify-baseline mt-7 */}
-            <div className="grid grid-cols-[repeat(auto-fill,_minmax(95px,_1fr))] gap-4  mt-7">
-                {/* <div className="flex flex-col items-center">
-                    <img src="./assets/folder.svg" className="size-20" />
-                    <p className="text-gray-400 text-sm">AppLogs</p>
-                </div> */}
-
+            <div className="grid grid-cols-[repeat(auto-fill,_minmax(95px,_1fr))] gap-4  mt-7 -translate-x-4">
                 {[
                     "Applogs",
                     "Profile",
