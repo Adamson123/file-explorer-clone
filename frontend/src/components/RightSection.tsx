@@ -1,6 +1,37 @@
 import { LayoutListIcon, LucideLayoutGrid, RefreshCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import invoke_command from "../lib/invoke_command";
+import useStartTask from "../hooks/task/useStartTask";
+
+type DirContents = {
+    name: string;
+    size: number;
+    is_dir: boolean;
+    path: string;
+};
 
 const RightSection = () => {
+    const { events_handler, start_task } = useStartTask("monitor_dir");
+    const [dir_contents, set_dir_contents] = useState<DirContents[]>([]);
+
+    useEffect(() => {
+        (async () => {
+            // const dir_contents = await invoke_command("get_dir_contents", {
+            //     path: "C:\\",
+            // });
+            // console.log(dir_contents);
+            // const res = await start_task({ path: "C:\\Admin\\Desktop" });
+            // console.log(res);
+
+            events_handler.add_error_listener((e) => {
+                console.log("Error: ", e);
+            }, "1");
+
+            events_handler.add_message_listener((message) => {
+                console.log("Message from task:", message);
+            }, "1");
+        })();
+    }, []);
     return (
         <section className="bg-primary grow h-full pl-5 pr-2">
             <div className="flex items-center gap-5 border-b border-gray-700/50">

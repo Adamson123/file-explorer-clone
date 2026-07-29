@@ -9,7 +9,7 @@ const App = () => {
             {/*
             rounded-lg overflow-hidden
             */}
-            <div className="flex flex-col size-full">
+            <div className="flex flex-col size-full rounded-xl overflow-hidden">
                 <TitleBar />
                 {/* grid grid-cols-[20%_80%] grow */}
                 <div className="w-full grow flex">

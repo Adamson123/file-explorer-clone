@@ -16,7 +16,7 @@ const invoke_command = async <T = any>(
         msg_type: "command",
         body: {
             cmd,
-            args,
+            args: args,
             //  request_id: "",
         },
     });

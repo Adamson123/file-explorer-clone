@@ -13,11 +13,11 @@ pub mod create_webview;
 #[path = "./lib/webview_windows/webview_windows_manager.rs"]
 pub mod webview_windows_manager;
 
-#[path = "./lib/webview_windows/attach_to_desktop.rs"]
-pub mod attach_to_desktop;
+// #[path = "./lib/webview_windows/attach_to_desktop.rs"]
+// pub mod attach_to_desktop;
 
-#[path = "./lib/webview_windows/reserve_desktop_space.rs"]
-pub mod reserve_desktop_space;
+// #[path = "./lib/webview_windows/reserve_desktop_space.rs"]
+// pub mod reserve_desktop_space;
 
 #[path = "./lib/user_events/user_events.rs"]
 pub mod user_events;
@@ -57,3 +57,6 @@ pub mod commands_ipc_handler;
 
 #[path = "./lib/utils.rs"]
 pub mod utils;
+
+#[path = "./start.rs"]
+pub mod start;

@@ -51,6 +51,10 @@ const set_decoration = async (args: { decoration: boolean }): Promise<void> => {
     return await invoke_command("set_decoration", args);
 };
 
+const close_window = async (): Promise<void> => {
+    return await invoke_command("close_window");
+};
+
 const resize_window = async (args: {
     direction:
         | "Top"
@@ -71,6 +75,7 @@ const window_commands = {
     move_window,
     set_decoration,
     resize_window,
+    close_window,
 };
 
 export default window_commands;

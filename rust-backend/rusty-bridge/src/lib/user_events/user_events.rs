@@ -19,6 +19,7 @@ pub enum WindowEvent {
     DragWindow,
     HideDecoration(bool),
     ResizeWindow(ResizeDirection),
+    CloseWindow,
 }
 
 pub enum WebviewEvent {

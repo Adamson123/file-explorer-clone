@@ -1,10 +1,11 @@
 [package]
-name = "file-explorer-clone"
+name = "rusty-bridge"
+#path = "src/example.rs"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-reqwest = { version = "0.12", features = ["json", "cookies"] }
+#reqwest = { version = "0.12", features = ["json", "cookies"] }
 tokio = { version = "1", features = ["full"] } 
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -12,16 +13,17 @@ tao = "0.35"
 #windows = "0.54"
 wry = "0.55.1"
 uuid = {version="1", features=["v4"]}
-window-vibrancy = "0.5"
+#ywindow-vibrancy = "0.5"
 
 [dependencies.windows]
 version = ">=0.59, <=0.62"
 features = [
-    "Data_Xml_Dom",
+   #"Data_Xml_Dom",
     "Win32_Foundation",
-    "Win32_Security",
+   #"Win32_Security",
     "Win32_System_Threading",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
     "Win32_Graphics_Gdi",
     "Win32_System_LibraryLoader",
 ]

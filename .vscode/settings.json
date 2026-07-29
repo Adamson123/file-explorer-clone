@@ -1,6 +1,9 @@
 // "learn/Cargo.toml"
 {
-    "rust-analyzer.linkedProjects": ["rust-backend/Cargo.toml"],
+    "rust-analyzer.linkedProjects": [
+        //"rust-backend\\rusty-bridge\\Cargo.toml",
+        "rust-backend\\main\\Cargo.toml"
+    ],
     "editor.tokenColorCustomizations": {
         "textMateRules": [
             {

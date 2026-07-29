@@ -74,3 +74,29 @@ macro_rules! repeat_for {
         }
     };
 }
+
+#[macro_export]
+macro_rules! repeat {
+    (
+        $a:expr,
+        |$var:ident| $body:block
+    ) => {
+        let mut $var = 0;
+
+        loop {
+            match $a.get_task_state().await {
+                $crate::task_args::TaskHandle::Run => {}
+
+                $crate::task_args::TaskHandle::Pause => {
+                    continue;
+                }
+
+                $crate::task_args::TaskHandle::Cancel => break,
+            }
+
+            $body;
+
+            $var += 1;
+        }
+    };
+}

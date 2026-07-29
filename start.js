@@ -9,7 +9,7 @@ const logger = (name, msg) => {
 
 const run_rust_backend = () => {
     const rust_backend_process = spawn("cargo", ["run"], {
-        cwd: "C:\\Users\\Admin\\dev\\file-explorer-clone\\rust-backend",
+        cwd: "C:\\Users\\Admin\\dev\\file-explorer-clone\\rust-backend\\main",
         shell: true,
     });
 

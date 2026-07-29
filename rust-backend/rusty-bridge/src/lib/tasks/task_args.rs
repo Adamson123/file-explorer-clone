@@ -116,9 +116,26 @@ impl TaskArgs {
         state
     }
 
+    pub fn set_state(&mut self, state: &TaskHandle) {
+        self.task_handle = state.clone();
+    }
+
     pub async fn send_msg(&self, msg: &Value) {
         let msg = msg.clone();
         let js_event = construct_js_event(&self.event_name, &msg);
+
+        let _ = self
+            .globals
+            .event_loop_proxy
+            .send_event(UserEvent::WebviewEvent(
+                self.window_key.clone(),
+                WebviewEvent::EvaluateScript(js_event),
+            ));
+    }
+
+    pub async fn send_err_msg(&self, msg: &Value) {
+        let msg = msg.clone();
+        let js_event = construct_js_event(&format!("{}_error", self.event_name), &msg);
 
         let _ = self
             .globals

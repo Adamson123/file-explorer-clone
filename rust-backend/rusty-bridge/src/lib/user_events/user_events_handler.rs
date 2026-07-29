@@ -12,19 +12,25 @@ use crate::start_app::MainThreadStates;
 use crate::tasks_ipc_handler::tasks_ipc_handler;
 use crate::user_events::{ResizeDirection, UserEvent, WebviewEvent, WindowEvent};
 use crate::utils::get_field_as_string;
-use crate::webview_windows_manager::WebViewWindowSetup;
+use crate::webview_windows_manager::{WebViewWindow, WebViewWindowSetup};
 use std::os::raw::c_void;
 use std::sync::Arc;
 
 pub fn user_events_handler(
     event: &UserEvent,
     main_thread_states: &mut MainThreadStates,
-    main_window_key: &str,
+    _main_window_key: &str,
 ) {
-    let _main_webview_window = main_thread_states
-        .webview_windows_manager
-        .get_webview_window(main_window_key)
-        .unwrap();
+    // let _main_webview_window = main_thread_states
+    //     .webview_windows_manager
+    //     .get_webview_window(main_window_key);
+
+    let get_webview_and_unwrap = |window_key: &str| -> &WebViewWindow {
+        main_thread_states
+            .webview_windows_manager
+            .get_webview_window(window_key)
+            .unwrap()
+    };
 
     match event {
         UserEvent::IPCMessage(window_key, msg) => {
@@ -65,58 +71,57 @@ pub fn user_events_handler(
                 .add_webview_window(&new_window_config);
         }
 
-        UserEvent::WindowEvent(window_key, window_event) => match window_event {
-            WindowEvent::Minimize(minimize) => {
-                let webview_window = main_thread_states
-                    .webview_windows_manager
-                    .get_webview_window(window_key);
+        UserEvent::WindowEvent(window_key, window_event) => {
+            let webview_window = main_thread_states
+                .webview_windows_manager
+                .get_webview_window(window_key);
 
-                if let Some(webview_window) = webview_window {
+            if webview_window.is_none() {
+                return;
+            }
+
+            let webview_window = webview_window.unwrap();
+
+            match window_event {
+                WindowEvent::Minimize(minimize) => {
+                    //  let webview_window = get_webview_and_unwrap(&window_key);
                     if minimize.clone() {
                         webview_window.window.set_minimized(true);
                     } else {
                         webview_window.window.set_minimized(false);
                     }
                 }
-            }
-            WindowEvent::DragWindow => {
-                let webview_window = main_thread_states
-                    .webview_windows_manager
-                    .get_webview_window(window_key);
-
-                if let Some(webview_window) = webview_window {
+                WindowEvent::DragWindow => {
+                    //  let webview_window = get_webview_and_unwrap(&window_key);
                     let _ = webview_window.window.drag_window();
                 }
-            }
-            WindowEvent::HideDecoration(hide) => {
-                let webview_window = main_thread_states
-                    .webview_windows_manager
-                    .get_webview_window(window_key);
-
-                if let Some(webview_window) = webview_window {
+                WindowEvent::HideDecoration(hide) => {
+                    //   let webview_window = get_webview_and_unwrap(&window_key);
                     webview_window.window.set_decorations(!hide);
                 }
-            }
 
-            //TODO: Might be removed
-            WindowEvent::ResizeWindow(direction) => {
-                let ht = match direction {
-                    ResizeDirection::Top => HTTOP,
-                    ResizeDirection::Bottom => HTBOTTOM,
-                    ResizeDirection::Left => HTLEFT,
-                    ResizeDirection::Right => HTRIGHT,
-                    ResizeDirection::TopLeft => HTTOPLEFT,
-                    ResizeDirection::TopRight => HTTOPRIGHT,
-                    ResizeDirection::BottomLeft => HTBOTTOMLEFT,
-                    ResizeDirection::BottomRight => HTBOTTOMRIGHT,
-                    ResizeDirection::None => return,
-                };
+                WindowEvent::CloseWindow => {
+                    main_thread_states
+                        .webview_windows_manager
+                        .remove_webview_window(window_key);
+                }
 
-                let webview_window = main_thread_states
-                    .webview_windows_manager
-                    .get_webview_window(window_key);
+                //TODO: Might be removed
+                WindowEvent::ResizeWindow(direction) => {
+                    let ht = match direction {
+                        ResizeDirection::Top => HTTOP,
+                        ResizeDirection::Bottom => HTBOTTOM,
+                        ResizeDirection::Left => HTLEFT,
+                        ResizeDirection::Right => HTRIGHT,
+                        ResizeDirection::TopLeft => HTTOPLEFT,
+                        ResizeDirection::TopRight => HTTOPRIGHT,
+                        ResizeDirection::BottomLeft => HTBOTTOMLEFT,
+                        ResizeDirection::BottomRight => HTBOTTOMRIGHT,
+                        ResizeDirection::None => return,
+                    };
 
-                if let Some(webview_window) = webview_window {
+                    let webview_window = get_webview_and_unwrap(&window_key);
+
                     unsafe {
                         let hwnd = HWND(webview_window.window.hwnd() as *mut c_void);
 
@@ -125,7 +130,7 @@ pub fn user_events_handler(
                     }
                 }
             }
-        },
+        }
 
         UserEvent::WebviewEvent(window_key, webview_event) => match webview_event {
             WebviewEvent::EvaluateScript(script) => {

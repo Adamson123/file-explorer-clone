@@ -4,17 +4,13 @@ use tao::{
     dpi::{LogicalPosition, LogicalSize},
     event::{Event, WindowEvent},
     event_loop::{EventLoop, EventLoopWindowTarget},
-    platform::windows::WindowExtWindows,
 };
 
-use windows::Win32::Foundation::HWND;
 use wry::Rect;
 
 use crate::{
-    attach_to_desktop::attach_to_desktop,
     create_webview::WEBVIEW_GAP,
     globals::Globals,
-    reserve_desktop_space::reserve_desktop_space,
     user_events::UserEvent,
     user_events_handler::user_events_handler,
     webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup},
@@ -26,7 +22,7 @@ pub struct MainThreadStates<'a> {
     pub webview_windows_manager: &'a mut WebViewWindowManager,
 }
 
-pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
+pub fn start_app(url: &str, event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
     let _globals_clone = Arc::clone(&globals);
     let globals_clone_2 = Arc::clone(&globals);
 
@@ -40,7 +36,7 @@ pub fn start_app(event_loop: EventLoop<UserEvent>, globals: Arc<Globals>) {
         ipc_handler: None,
         window_config: WebViewWindowConfig {
             window_name: "Main Window".to_string(),
-            url: "http://localhost:5173".to_string(),
+            url: url.to_string(),
             width: 900,
             height: 600,
             icon_path: String::new(),

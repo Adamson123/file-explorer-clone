@@ -1,0 +1,17 @@
+[package]
+name = "file-explorer-clone"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rusty-bridge = {path = "../rusty-bridge" }
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = [
+    "rt",           # 👈 Required! The Tokio runtime
+    "time",         # 👈 Required! For tokio::time::sleep() and interval()
+    "sync",         # 👈 Required! For tokio::sync::Mutex, oneshot, etc.
+    "macros",       # 👈 Required! For #[tokio::main] (though Tauri provides this)
+    "rt-multi-thread", # 👈 Required for multi-threaded runtime (Tauri uses this)
+    "fs"
+]}

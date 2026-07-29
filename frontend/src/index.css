@@ -4,6 +4,7 @@
 
 @theme {
     --color-primary: rgba(23, 23, 23);
+    --color-transparent-black: rgba(19, 18, 18, 0.94);
     --font-geologica: "Geologica", sans-serif;
 }
 

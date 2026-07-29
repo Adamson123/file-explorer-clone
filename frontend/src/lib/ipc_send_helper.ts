@@ -4,7 +4,15 @@ import { type IPCMsg, type CommandIPCMsg, type TaskIPCMsg } from "./types";
 const send_ipc_msg = <T extends CommandIPCMsg | TaskIPCMsg>(
     ipc_msg: IPCMsg<T>,
 ) => {
-    (window as any).ipc.postMessage(JSON.stringify(ipc_msg));
+    (window as any).ipc.postMessage(
+        JSON.stringify({
+            msg_type: ipc_msg.msg_type,
+            body: {
+                ...ipc_msg.body,
+                args: ipc_msg.body.args || {},
+            },
+        } as IPCMsg<T>),
+    );
 };
 
 const send_ipc_msg_with_promise = <T extends CommandIPCMsg | TaskIPCMsg>(

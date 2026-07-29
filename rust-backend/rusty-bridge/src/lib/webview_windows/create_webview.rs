@@ -1,11 +1,10 @@
+use crate::{globals::Globals, user_events::UserEvent, webview_windows_manager::WebViewConfig};
 use std::sync::Arc;
 use tao::{
     dpi::{LogicalPosition, LogicalSize},
     window::Window,
 };
 use wry::{http::Request, Rect, WebView, WebViewBuilder};
-
-use crate::{globals::Globals, user_events::UserEvent, webview_windows_manager::WebViewConfig};
 
 pub type IPCHandler = Arc<dyn Fn(Request<String>) + 'static>;
 
@@ -26,7 +25,7 @@ pub fn create_webview(
     };
 
     const INTIALIZATION_SCRIPT: &str = r#"
-        window.addEventListener("load", () => {
+      //  window.addEventListener("load", () => {
             console.log("Window fully reloaded");
             window.ipc.postMessage(
                 JSON.stringify({
@@ -41,9 +40,12 @@ pub fn create_webview(
                     },
                 }),
             );
-        });
+      //  });
      
     document.addEventListener("mousedown",(event)=>{
+     if(event.target.closest(`[move-window="false"]`)){
+     return;
+     }
         if(event.target.closest(`[move-window="true"]`)){
           window.ipc.postMessage(
             JSON.stringify({
@@ -66,9 +68,6 @@ pub fn create_webview(
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();
             let window_key = window_key.clone();
-            //globals_clone for with_ipc_handler, and it's moved away by tokio task ❌
-            // let globals_clone = Arc::clone(&globals_clone_1);
-            //globals_clone for tokio task, globals_clone_1 belongs to with_ipc_handler ✔
             let globals_clone = Arc::clone(&globals);
 
             //Tokio spawn because ipc_handler does not accept async function
