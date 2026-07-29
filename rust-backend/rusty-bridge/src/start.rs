@@ -11,6 +11,7 @@ use crate::{
     commands_registry::{Command, CommandsRegistry},
     globals::Globals,
     start_app::{start_app, MainThreadStates, WindowEventHandler},
+    states_manager::StatesManager,
     tasks_manager::{Task, TaskManager},
     user_events::{CustomEventHandler, UserEvent},
 };
@@ -23,6 +24,7 @@ use crate::{
 pub struct RustyBridgeBuilder {
     pub commands_registry: Option<CommandsRegistry>,
     pub task_manager: Option<TaskManager>,
+    pub states_manager: Option<StatesManager>,
     pub url: String,
     pub custom_event_handler: Option<CustomEventHandler>,
     pub window_event_handler: Option<WindowEventHandler>,
@@ -42,9 +44,12 @@ impl RustyBridgeBuilder {
             tasks: HashMap::new(),
         };
 
+        let states_manager = StatesManager { states: Vec::new() };
+
         Self {
             commands_registry: Some(commands_registry),
             task_manager: Some(task_manager),
+            states_manager: Some(states_manager),
             custom_event_handler: Some(Box::new(move |_e, _m| {})),
             url: String::new(),
             window_event_handler: Some(Box::new(move |_e, _m| {})),
@@ -58,6 +63,7 @@ impl RustyBridgeBuilder {
 
     pub fn register_commands(mut self, commands: Vec<Command>) -> Self {
         let mut commands_registry = self.commands_registry.take().unwrap();
+
         // Window management commands
         commands_registry.register_command(minimize_window());
         commands_registry.register_command(maximize_window());
@@ -86,6 +92,18 @@ impl RustyBridgeBuilder {
         self
     }
 
+    pub fn register_states<T>(mut self, states: Vec<T>) -> Self
+    where
+        T: Any + Send + Sync,
+    {
+        let mut states_manager = self.states_manager.take().unwrap();
+        for s in states {
+            states_manager.add_state(s);
+        }
+        self.states_manager = Some(states_manager);
+        self
+    }
+
     pub fn handle_custom_event<F>(mut self, custom_event_handler: F) -> Self
     where
         F: Fn(&Box<dyn Any + Send>, &mut MainThreadStates) + 'static,
@@ -109,6 +127,7 @@ impl RustyBridgeBuilder {
         let globals = Globals {
             commands_register: Arc::new(Mutex::new(self.commands_registry.take().unwrap())),
             tasks_manager: Arc::new(Mutex::new(self.task_manager.take().unwrap())),
+            states_manager: Arc::new(self.states_manager.take().unwrap()),
             event_loop_proxy: proxy,
         };
         let globals = Arc::new(globals);

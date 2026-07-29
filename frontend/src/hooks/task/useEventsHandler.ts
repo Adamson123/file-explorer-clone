@@ -3,7 +3,7 @@ import type { ListenersRef } from "./useStartTask";
 import type { IPCMsg, TaskIPCMsg } from "../../lib/types";
 import { send_ipc_msg_with_promise } from "../../lib/ipc_send_helper";
 
-function useEventsHandler(
+function useEventsHandler<T>(
     listeners_ref: ListenersRef,
     event_name_ref: React.RefObject<string>,
     task_id_ref: React.RefObject<string>,
@@ -61,7 +61,7 @@ function useEventsHandler(
                 listeners.error_listeners.push({ id, callback });
             },
 
-            send_msg: async (args: any) => {
+            send_msg: async (args: T) => {
                 await send_ipc_msg_with_promise<TaskIPCMsg>(
                     get_msg_obj({
                         args: { sender: "listener", data: args },

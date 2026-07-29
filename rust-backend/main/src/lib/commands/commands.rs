@@ -5,12 +5,18 @@ use rusty_bridge::{
 };
 use serde_json::{json, Value};
 
+use crate::states::AppState;
+
 pub enum CustomEvent {
     LogWindowKey,
 }
 
 command_struct!(log_window_key, |a, g| {
-    println!("Logging window keys from the command handler...");
+    let last_dir_info = g.states_manager.get_state::<AppState>();
+    println!(
+        "Logging window keys from the command handler and g: {:?}",
+        last_dir_info
+    );
 
     g.event_loop_proxy
         .send_event(UserEvent::CustomEvent(Box::new(CustomEvent::LogWindowKey)))

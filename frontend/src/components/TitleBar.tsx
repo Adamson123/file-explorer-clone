@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import window_commands from "../lib/window_commands";
 import { useState } from "react";
+import invoke_command from "../lib/invoke_command";
 //import invoke_command from "../lib/invoke_command";
 
 //If there's an issue with clicking a child inside a parent with move-window="true", we can add move-window="false" to the child element to solve it. This is useful for buttons inside a title bar, for example.
@@ -34,6 +35,12 @@ const TitleBar = () => {
             {/* Left */}
             {/* TODO: Wrap each of them with buttons */}
             <div className="flex gap-6 items-center">
+                <button
+                    move-window="false"
+                    onClick={() => invoke_command("log_window_key")}
+                >
+                    Log
+                </button>
                 <Minus
                     move-window="false"
                     onClick={() => window_commands.minimize_window()}

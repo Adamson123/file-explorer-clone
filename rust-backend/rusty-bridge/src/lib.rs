@@ -55,6 +55,9 @@ pub mod tasks_ipc_handler;
 #[path = "./lib/commands/commands_ipc_handler.rs"]
 pub mod commands_ipc_handler;
 
+#[path = "./lib/states_manager.rs"]
+pub mod states_manager;
+
 #[path = "./lib/utils.rs"]
 pub mod utils;
 

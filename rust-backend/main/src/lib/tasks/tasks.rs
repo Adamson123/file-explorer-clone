@@ -4,7 +4,7 @@ use rusty_bridge::{repeat, task};
 use serde_json::json;
 use tokio::time::sleep;
 
-use crate::commands::get_dir_c;
+use crate::{commands::get_dir_c, states::AppState};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 struct Dir {
@@ -42,7 +42,16 @@ task!(monitor_dir, |a| {
         .await;
 
         match dir_c {
-            Ok(c) => a.send_msg(&json!(c)).await,
+            Ok(c) => {
+                let last_dir_info = a.globals.states_manager.get_state::<AppState>();
+                if let Some(state) = last_dir_info {
+                    let mut info = state.information.lock().await;
+                    info.path = current_dir.path.clone();
+                    info.contents = json!(c);
+                };
+
+                a.send_msg(&json!(c)).await;
+            }
             Err(e) => {
                 a.send_err_msg(&json!(e)).await;
                 // current_dir.path = String::new();

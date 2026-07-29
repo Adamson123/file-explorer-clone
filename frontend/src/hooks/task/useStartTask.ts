@@ -12,7 +12,7 @@ export type ListenersRef = React.RefObject<{
     error_listeners: ListenerCallback[];
 }>;
 
-function useStartTask(task_name: string) {
+function useStartTask<T = any>(task_name: string) {
     // let called_ref = useRef(false);
 
     const task_id_ref = useRef(crypto.randomUUID());
@@ -30,7 +30,7 @@ function useStartTask(task_name: string) {
 
     const [isStarted, setIsStarted] = useState(false);
     const task_events = useTaskEvents(listeners_ref, event_name_ref);
-    const events_handler = useEventsHandler(
+    const events_handler = useEventsHandler<T>(
         listeners_ref,
         event_name_ref,
         task_id_ref,

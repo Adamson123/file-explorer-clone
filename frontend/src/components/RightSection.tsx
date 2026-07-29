@@ -11,7 +11,9 @@ type DirContents = {
 };
 
 const RightSection = () => {
-    const { events_handler, start_task } = useStartTask("monitor_dir");
+    const { events_handler, start_task } = useStartTask<{ path: string }>(
+        "monitor_dir",
+    );
     const [dir_contents, set_dir_contents] = useState<DirContents[]>([]);
 
     useEffect(() => {
@@ -20,8 +22,10 @@ const RightSection = () => {
             //     path: "C:\\",
             // });
             // console.log(dir_contents);
-            // const res = await start_task({ path: "C:\\Admin\\Desktop" });
-            // console.log(res);
+            const res = await start_task({
+                path: "C:\\Users\\Admin\\dev\\pc-usage\\core_logic\\src",
+            });
+            console.log(res);
 
             events_handler.add_error_listener((e) => {
                 console.log("Error: ", e);
@@ -31,6 +35,12 @@ const RightSection = () => {
                 console.log("Message from task:", message);
             }, "1");
         })();
+
+        setTimeout(() => {
+            events_handler.send_msg({
+                path: "C:\\Users\\Admin\\dev\\pc-usage\\core_logic",
+            });
+        }, 10000);
     }, []);
     return (
         <section className="bg-primary grow h-full pl-5 pr-2">
