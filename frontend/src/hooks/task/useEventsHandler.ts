@@ -8,7 +8,7 @@ function useEventsHandler<T>(
     event_name_ref: React.RefObject<string>,
     task_id_ref: React.RefObject<string>,
     task_name: string,
-    setIsStarted: React.Dispatch<React.SetStateAction<boolean>>,
+    set_is_started: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
     const events_handler = useMemo(() => {
         const listeners = listeners_ref.current;
@@ -104,7 +104,7 @@ function useEventsHandler<T>(
                 //task_events.remove_on_exit();
 
                 // called_ref.current = false;
-                setIsStarted(false);
+                set_is_started(false);
             },
             //TODO: Force kill task in rust backend, currently cancel is just a message to rust backend to cancel the task, but if the task is stuck in a loop or waiting for something, it will not be cancelled, we need to force cancel the task in rust backend, so we need to send a message to rust backend to force cancel the task, and rust backend will abort the task
             force_cancel: async () => {

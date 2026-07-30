@@ -1,5 +1,5 @@
 use file_explorer_clone::{
-    commands::{log_window_key, CustomEvent},
+    commands::{get_dir_contents, log_window_key, CustomEvent},
     states::{AppState, LastDirInfo},
     tasks::monitor_dir,
 };
@@ -20,7 +20,7 @@ async fn main() {
 
     RustyBridgeBuilder::new()
         .url("http://localhost:5173")
-        .register_commands(vec![log_window_key()])
+        .register_commands(vec![log_window_key(), get_dir_contents()])
         .register_tasks(vec![monitor_dir()])
         .register_states(vec![app_state])
         .handle_custom_event(|e, m| {

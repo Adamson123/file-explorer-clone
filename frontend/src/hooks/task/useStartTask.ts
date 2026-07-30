@@ -28,17 +28,17 @@ function useStartTask<T = any>(task_name: string) {
         error_listeners: [],
     });
 
-    const [isStarted, setIsStarted] = useState(false);
+    const [is_started, set_is_started] = useState(false);
     const task_events = useTaskEvents(listeners_ref, event_name_ref);
     const events_handler = useEventsHandler<T>(
         listeners_ref,
         event_name_ref,
         task_id_ref,
         task_name,
-        setIsStarted,
+        set_is_started,
     );
 
-    const start_task = useCallback(async (args: any) => {
+    const start_task = useCallback(async (args: T) => {
         task_events.add_on_message();
         task_events.add_on_exit();
         task_events.add_on_error();
@@ -54,11 +54,11 @@ function useStartTask<T = any>(task_name: string) {
             },
         });
 
-        setIsStarted(true);
+        set_is_started(true);
         return start_msg;
     }, []);
 
-    return { events_handler, start_task, isStarted };
+    return { events_handler, start_task, is_started };
 }
 
 export default useStartTask;

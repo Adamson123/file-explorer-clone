@@ -25,7 +25,7 @@ command_struct!(log_window_key, |a, g| {
     Ok(String::new())
 });
 
-pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
+pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<Vec<Value>, String> {
     let path = get_field_as_string(&a, "path");
     let mut dir_contents = tokio::fs::read_dir(&path)
         .await
@@ -66,8 +66,14 @@ pub async fn get_dir_c(a: &Value, _g: Arc<Globals>) -> Result<String, String> {
 
     println!("Done reading dir: {path}");
 
-    let entries_json = serde_json::to_string(&entries).unwrap_or(String::new());
-    Ok(entries_json)
+    Ok(entries)
 }
 
-command_struct!(get_dir_contents, |a, g| { get_dir_c(a, g).await });
+command_struct!(get_dir_contents, |a, g| {
+    let entries = get_dir_c(a, g).await;
+
+    match entries {
+        Ok(c) => Ok(serde_json::to_string(&c).unwrap_or(String::new())),
+        Err(e) => Err(e),
+    }
+});

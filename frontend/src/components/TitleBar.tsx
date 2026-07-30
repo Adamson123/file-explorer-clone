@@ -3,9 +3,6 @@ import {
     ArrowRight,
     Minus,
     Square,
-    SquareDashed,
-    SquareSigma,
-    SquaresIntersect,
     SquaresUnite,
     X,
 } from "lucide-react";
@@ -35,12 +32,12 @@ const TitleBar = () => {
             {/* Left */}
             {/* TODO: Wrap each of them with buttons */}
             <div className="flex gap-6 items-center">
-                <button
+                {/* <button
                     move-window="false"
                     onClick={() => invoke_command("log_window_key")}
                 >
                     Log
-                </button>
+                </button> */}
                 <Minus
                     move-window="false"
                     onClick={() => window_commands.minimize_window()}
