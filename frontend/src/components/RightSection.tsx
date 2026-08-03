@@ -1,38 +1,33 @@
-import {
-    File,
-    LayoutListIcon,
-    LucideLayoutGrid,
-    RefreshCcw,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { File, LayoutListIcon, LucideLayoutGrid } from "lucide-react";
+import { useEffect } from "react";
 import useStartTask from "../hooks/task/useStartTask";
-import invoke_command from "../lib/invoke_command";
 import type { ReactSetStateAction } from "../type";
-
-type DirContents = {
-    name: string;
-    size: number;
-    is_dir: boolean;
-    path: string;
-};
+import type { DirContents, PathData } from "../App";
 
 const RightSection = ({
-    current_dir,
-    set_current_dir,
+    current_path_data,
+    set_current_path_data,
+    update_nav_history,
+    set_is_dir_updated,
+    set_dir_contents,
+    dir_contents,
+    is_dir_updated,
 }: {
-    current_dir: string;
-    set_current_dir: ReactSetStateAction<string>;
+    current_path_data: PathData;
+    set_current_path_data: ReactSetStateAction<PathData>;
+    update_nav_history: (path: string, active_shortcut?: string) => void;
+    set_is_dir_updated: ReactSetStateAction<boolean>;
+    set_dir_contents: ReactSetStateAction<DirContents[]>;
+    dir_contents: DirContents[];
+    is_dir_updated: boolean;
 }) => {
-    const { events_handler, start_task, is_started } = useStartTask<{
+    const { events_handler, start_task } = useStartTask<{
         path: string;
     }>("monitor_dir");
-    const [dir_contents, set_dir_contents] = useState<DirContents[]>([]);
-    const [is_dir_updated, set_is_dir_updated] = useState(false);
 
     useEffect(() => {
         (async () => {
             // const res = await start_task({
-            //     //  path: "C:\\Users\\Admin\\dev\\pc-usage",
             //     path: current_dir,
             // });
             // console.log(res);
@@ -41,42 +36,23 @@ const RightSection = ({
                 console.log("Error: ", e);
             }, "1");
         })();
-
-        // setTimeout(() => {
-        //     set_is_dir_updated(false);
-        //     events_handler.send_msg({
-        //         path: "C:\\Users\\Admin\\dev\\pc-usage\\core_logic",
-        //     });
-        // }, 10000);
     }, []);
 
     useEffect(() => {
-        set_is_dir_updated(false);
-        invoke_command("get_dir_contents", { path: current_dir })
-            .then((res) => {
-                set_is_dir_updated(true);
-                console.log("Contents: ", res);
-
-                if (res) set_dir_contents(res);
-                else set_dir_contents([]);
-            })
-            .catch((e) => {
-                set_is_dir_updated(true);
-                console.log("Error reading dir:", { e });
-            });
-
         events_handler.add_message_listener((message) => {
-            //  console.log("Message from task:", message);
-            // console.log(message);
-            // console.log("Path: ", message.contents);
+            //  console.log(message, current_dir);
+            if (message.path !== current_path_data.path) return;
 
-            if (message.path !== current_dir) return;
             set_is_dir_updated(true);
             set_dir_contents(message.contents);
         }, "1");
 
-        events_handler.send_msg({ path: current_dir });
-    }, [current_dir]);
+        // events_handler.send_msg({ path: current_path_data.path });
+        return () => {
+            //To add new message listener with updated current_dir
+            events_handler.remove_message_listener("1");
+        };
+    }, [current_path_data]);
     return (
         <section className="bg-primary h-full w-full flex flex-col">
             {/* Head */}
@@ -89,17 +65,17 @@ const RightSection = ({
                     </div>
                     {/* Input */}
                     <div
-                        className="grow flex items-center  px-3
-                 rounded-sm  outline-gray-700/50 focus-within:outline-gray-500/50"
+                        className="grow flex items-center  pl-3
+                 rounded-sm  outline-gray-700/50 focus-within:outline-gray-500/50 pr-4.5"
                     >
                         <img src="./assets/folder.svg" className="size-4.5" />
                         <input
-                            value={current_dir}
+                            value={current_path_data.path}
                             type="text"
                             placeholder="Search"
                             className="bg-transparent text-[13px] text-gray-400 px-2 py-2 w-full outline-none"
                         />
-                        <RefreshCcw className="text-gray-400 size-4.5" />
+                        <img src="/assets/refresh.svg" className=" size-3.5" />
                     </div>
                     {/* Content
                 <div className="mt-4">
@@ -118,16 +94,18 @@ const RightSection = ({
                         scrollbarColor:
                             "var(--color-primary) color-mix(in oklab, var(--color-gray-400) 10%, transparent)",
                     }}
-                    className="grid grid-cols-[repeat(auto-fill,minmax(95px,1fr))] content-start items-start  gap-y-3 mt-3  overflow-y-auto grow  pb-25 px-2"
+                    className="grid grid-cols-[repeat(auto-fill,minmax(95px,1fr))] content-start items-start mt-3  overflow-y-auto grow pb-25 px-2"
                 >
                     {dir_contents.map((content) => (
                         <div
-                            onDoubleClick={() =>
-                                content.is_dir && set_current_dir(content.path)
+                            onDoubleClick={
+                                () =>
+                                    content.is_dir &&
+                                    update_nav_history(content.path) //set_current_dir(content.path)
                             }
                             key={content.path}
                             tabIndex={1}
-                            className="flex flex-col items-center cursor-pointer hover:bg-gray-400/10 rounded-lg transition-colors duration-100 py-3 focus:bg-gray-400/10"
+                            className="flex flex-col items-center cursor-pointer hover:bg-gray-400/10 transition-colors rounded-sm duration-100 py-2 focus:bg-gray-400/10 h-full"
                         >
                             {content.is_dir ? (
                                 <img
@@ -137,9 +115,10 @@ const RightSection = ({
                             ) : (
                                 <File className="size-17 stroke-white fill-white mb-1" />
                             )}
+                            {/* line-clamp-2 truncate max-w-[95%] text-wrap */}
                             <p
                                 title={content.name}
-                                className="text-gray-400 text-xs text-center line-clamp-2  break-all px-1"
+                                className="text-gray-400 text-xs text-center line-clamp-2 max-w-[95%] break-all"
                             >
                                 {content.name}
                             </p>

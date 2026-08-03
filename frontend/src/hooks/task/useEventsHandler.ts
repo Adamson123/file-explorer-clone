@@ -116,15 +116,28 @@ function useEventsHandler<T>(
             },
 
             remove_message_listener(id: string) {
-                let message_listeners = listeners_ref.current.message_listeners;
-                message_listeners = message_listeners.filter(
-                    (f) => f.id !== id,
-                );
+                let message_listeners =
+                    listeners_ref.current.message_listeners.filter(
+                        (f) => f.id !== id,
+                    );
+
+                listeners_ref.current.message_listeners = message_listeners;
             },
 
             remove_exit_listener(id: string) {
-                let exit_listeners = listeners_ref.current.exit_listeners;
-                exit_listeners = exit_listeners.filter((f) => f.id !== id);
+                let exit_listeners =
+                    listeners_ref.current.exit_listeners.filter(
+                        (f) => f.id !== id,
+                    );
+                listeners_ref.current.exit_listeners = exit_listeners;
+            },
+
+            remove_error_listener(id: string) {
+                let error_listeners =
+                    listeners_ref.current.error_listeners.filter(
+                        (f) => f.id !== id,
+                    );
+                listeners_ref.current.error_listeners = error_listeners;
             },
 
             remove_all_message_listeners() {
@@ -133,6 +146,10 @@ function useEventsHandler<T>(
 
             remove_all_exit_listeners() {
                 listeners_ref.current.exit_listeners = [];
+            },
+
+            remove_all_error_listeners() {
+                listeners_ref.current.error_listeners = [];
             },
         };
     }, []);

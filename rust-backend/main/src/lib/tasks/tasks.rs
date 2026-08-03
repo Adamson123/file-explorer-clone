@@ -50,23 +50,19 @@ task!(monitor_dir, |a| {
                     info.contents = json!(c);
                 };
 
-                // a.send_msg(&json!({"contents":json!(c),"path":&current_dir.path}))
-                //     .await;
-                //  let contents: serde_json::Value = serde_json::from_str(&c).unwrap_or(json!({}));
                 let json = json!({
                     "contents": c,
                     "path": current_dir.path,
                 });
-                //format!(r#"{{contents:{},path:{}}}"#, c, current_dir.path);
+
                 a.send_msg(&json).await;
             }
             Err(e) => {
                 a.send_err_msg(&json!(e)).await;
-                // current_dir.path = String::new();
             }
         };
 
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs_f32(3.5)).await;
     });
 
     println!("Monitor done");

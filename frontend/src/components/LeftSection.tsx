@@ -1,5 +1,6 @@
 import { ChevronRight, Pin } from "lucide-react";
 import type { ReactSetStateAction } from "../type";
+import type { PathData } from "../App";
 
 const quick_access = [
     {
@@ -38,12 +39,12 @@ const pinned = [
     {
         name: "Movies",
         icon: "./assets/folder.svg",
-        path: "",
+        path: "C",
     },
     {
         name: "Projects",
         icon: "./assets/folder.svg",
-        path: "",
+        path: "C",
     },
 ];
 
@@ -64,19 +65,27 @@ const ShortcutCard = ({
     name,
     icon,
     path,
-    set_current_dir,
-    current_dir,
+    // set_current_path_data,
+    //   current_dir,
+    active_shortcut,
+    // set_active_shortcut,
     OtherElements = undefined,
+    shortcut_onclick,
 }: (typeof quick_access)[0] & {
-    set_current_dir: ReactSetStateAction<string>;
-    current_dir: string;
+    // set_current_path_data: ReactSetStateAction<PathData>;
+    // //current_dir: string;
+    // set_active_shortcut: ReactSetStateAction<string>;
+    active_shortcut: string;
     OtherElements?: React.ReactNode;
+    shortcut_onclick: (p: string) => void;
 }) => {
     return (
         <div
-            onClick={() => set_current_dir(path)}
+            onClick={() => {
+                shortcut_onclick(path);
+            }}
             className={`flex items-center gap-1.5 p-2.5 cursor-pointer hover:bg-gray-400/10 rounded-lg transition-colors duration-100 ${
-                current_dir === path && "bg-gray-400/10"
+                active_shortcut === path && "bg-gray-400/10"
             }`}
         >
             <img src={icon} className="size-4.5" />
@@ -87,12 +96,27 @@ const ShortcutCard = ({
 };
 
 const LeftSection = ({
-    set_current_dir,
-    current_dir,
+    set_current_path_data,
+    //  current_path_data,
+    active_shortcut,
+    set_active_shortcut,
+    update_nav_history,
 }: {
-    set_current_dir: ReactSetStateAction<string>;
-    current_dir: string;
+    set_current_path_data: ReactSetStateAction<PathData>;
+    set_active_shortcut: ReactSetStateAction<string>;
+    // current_path_data: PathData;
+    active_shortcut: string;
+    update_nav_history: (p: string, c: string) => void;
 }) => {
+    const shortcut_onclick = (path: string) => {
+        set_current_path_data({
+            path,
+            shortcut: path,
+        });
+        set_active_shortcut(path);
+        update_nav_history(path, path);
+    };
+
     return (
         // bg-[#1b1b1b]
         <section
@@ -112,18 +136,14 @@ const LeftSection = ({
                 </h2>
                 <div className="pl-4 text-sm flex flex-col gap-1">
                     {quick_access.map((item, index) => (
-                        // <div
-                        //     key={index}
-                        //     className="flex items-center gap-1.5 p-1"
-                        // >
-                        //     <img src={item.icon} className="size-4.5" />
-                        //     <p>{item.name}</p>
-                        // </div>
                         <ShortcutCard
                             {...item}
                             key={index}
-                            current_dir={current_dir}
-                            set_current_dir={set_current_dir}
+                            active_shortcut={active_shortcut}
+                            shortcut_onclick={shortcut_onclick}
+                            //  set_active_shortcut={set_active_shortcut}
+                            // current_path_data={current_path_data}
+                            //  set_current_path_data={set_current_path_data}
                         />
                     ))}
                 </div>
@@ -135,20 +155,14 @@ const LeftSection = ({
                 </h2>
                 <div className="pl-4 text-xs flex flex-col gap-1">
                     {pinned.map((item, index) => (
-                        // <div
-                        //     onClick={() => set_current_dir(item.path)}
-                        //     key={index}
-                        //     className="flex items-center gap-1.5 p-1"
-                        // >
-                        //     <img src={item.icon} className="size-4.5" />
-                        //     <p>{item.name}</p>
-                        //     <Pin className="size-3.5 text-gray-400 rotate-45 ml-auto" />
-                        // </div>
                         <ShortcutCard
                             {...item}
                             key={index}
-                            set_current_dir={set_current_dir}
-                            current_dir={current_dir}
+                            active_shortcut={active_shortcut}
+                            //  set_active_shortcut={set_active_shortcut}
+                            // current_path_data={current_path_data}
+                            //  set_current_path_data={set_current_path_data}
+                            shortcut_onclick={shortcut_onclick}
                             OtherElements={
                                 <Pin className="size-3.5 text-gray-400 rotate-45 ml-auto" />
                             }
@@ -163,18 +177,14 @@ const LeftSection = ({
                 </h2>
                 <div className="pl-4 text-xs flex flex-col gap-1">
                     {this_pc.map((item, index) => (
-                        // <div
-                        //     key={index}
-                        //     className="flex items-center gap-1.5 p-1"
-                        // >
-                        //     <img src={item.icon} className="size-4.5" />
-                        //     <p>{item.name}</p>
-                        // </div>
                         <ShortcutCard
                             {...item}
                             key={index}
-                            current_dir={current_dir}
-                            set_current_dir={set_current_dir}
+                            active_shortcut={active_shortcut}
+                            // set_active_shortcut={set_active_shortcut}
+                            // // current_path_data={current_path_data}
+                            // set_current_path_data={set_current_path_data}
+                            shortcut_onclick={shortcut_onclick}
                         />
                     ))}
                 </div>
