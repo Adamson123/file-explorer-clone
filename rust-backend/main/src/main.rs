@@ -1,5 +1,5 @@
 use file_explorer_clone::{
-    commands::{get_dir_contents, log_window_key, CustomEvent},
+    commands::{create_file, get_dir_contents, log_window_key, CustomEvent},
     states::{AppState, LastDirInfo},
     tasks::monitor_dir,
 };
@@ -20,7 +20,7 @@ async fn main() {
 
     RustyBridgeBuilder::new()
         .url("http://localhost:5173")
-        .register_commands(vec![log_window_key(), get_dir_contents()])
+        .register_commands(vec![log_window_key(), get_dir_contents(), create_file()])
         .register_tasks(vec![monitor_dir()])
         .register_states(vec![app_state])
         .handle_custom_event(|e, m| {
@@ -42,17 +42,7 @@ async fn main() {
                     window_id: _,
                     event: tao::event::WindowEvent::Resized(_size),
                     ..
-                } => {
-                    // if let Some(webview) = m
-                    //     .webview_windows_manager
-                    //     .get_webview_window_by_tao_window_id(window_id)
-                    // {
-                    //     println!(
-                    //         "Window with key {} has been resized to: {:?}",
-                    //         webview.key, size
-                    //     );
-                    // }
-                }
+                } => {}
                 _ => {}
             };
         })

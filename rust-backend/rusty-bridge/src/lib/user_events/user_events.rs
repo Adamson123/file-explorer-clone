@@ -1,5 +1,6 @@
 use std::any::Any;
 
+use serde_json::Value;
 use wry::http::Request;
 
 use crate::{start_app::MainThreadStates, webview_windows_manager::WebViewWindowConfig};
@@ -23,6 +24,7 @@ pub enum WindowEvent {
     DragWindow,
     HideDecoration(bool),
     ResizeWindow(ResizeDirection),
+    SendMsgToWindowBySelector(String, Value),
     CloseWindow,
 }
 

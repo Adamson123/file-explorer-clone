@@ -45,13 +45,16 @@ pub fn start_app(
         window_config: WebViewWindowConfig {
             window_name: "Main Window".to_string(),
             url: url.to_string(),
-            width: 900,
-            height: 600,
+            width: 900.0,
+            height: 600.0,
             icon_path: String::new(),
             transparent: true,
             shadow: false,
             decoration: false,
             resizable: true,
+            position: None,
+            parent_window_key: String::new(),
+            selector: String::new(),
         },
     };
 
@@ -74,6 +77,9 @@ pub fn start_app(
                     window_id,
                     ..
                 } => {
+                    //TODO: Remove closing other windows when the main window is closed
+                    //TODO: End tasks of parent and child windows when parent window is closed
+
                     let webview_window =
                         webview_windows_manager.get_webview_window_by_tao_window_id(window_id);
 

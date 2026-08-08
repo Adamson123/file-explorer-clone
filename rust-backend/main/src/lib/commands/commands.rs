@@ -77,3 +77,17 @@ command_struct!(get_dir_contents, |a, g| {
         Err(e) => Err(e),
     }
 });
+
+command_struct!(create_file, |a, g| {
+    let path = get_field_as_string(&a, "path");
+
+    if path.is_empty() {
+        return Err("Path should not be empty".into());
+    }
+
+    tokio::fs::File::create(path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok("File created successfully".into())
+});

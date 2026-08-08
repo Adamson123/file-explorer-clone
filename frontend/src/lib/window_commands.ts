@@ -24,6 +24,12 @@ const webview_window_config = {
     transparent: false,
     shadow: true,
     resizable: true,
+    position: null as null | {
+        x: number;
+        y: number;
+    },
+    parent_window_key: "",
+    selector: "",
 };
 
 const create_window = async (
@@ -63,6 +69,13 @@ const close_window = async (): Promise<void> => {
     return await invoke_command("close_window");
 };
 
+const send_msg_to_window_by_selector = async (selector: string, msg: any) => {
+    return await invoke_command("send_msg_to_window_by_selector", {
+        selector,
+        msg,
+    });
+};
+
 const resize_window = async (args: {
     direction:
         | "Top"
@@ -86,6 +99,7 @@ const window_commands = {
     close_window,
     maximize_window,
     restore_window,
+    send_msg_to_window_by_selector,
 };
 
 export default window_commands;

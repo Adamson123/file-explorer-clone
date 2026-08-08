@@ -24,8 +24,16 @@ pub fn create_webview(
         None => Arc::new(move |_msg| {}),
     };
 
-    const INTIALIZATION_SCRIPT: &str = r#"
-      //  window.addEventListener("load", () => {
+    let dynamic_script = format!(
+        r#"
+     localStorage.setItem("window_key", "{}");
+    "#,
+        window_key
+    );
+
+    const STATIC_SCRIPT: &str = r#"
+        
+      
             console.log("Window fully reloaded");
             window.ipc.postMessage(
                 JSON.stringify({
@@ -40,7 +48,7 @@ pub fn create_webview(
                     },
                 }),
             );
-      //  });
+    
      
     document.addEventListener("mousedown",(event)=>{
      if(event.target.closest(`[move-window="false"]`)){
@@ -61,10 +69,12 @@ pub fn create_webview(
     });
     "#;
 
+    let initialization_script = format!("{}\n{}", dynamic_script, STATIC_SCRIPT);
+
     let webview = WebViewBuilder::new()
         .with_url(&webview_config.url)
         .with_transparent(webview_config.transparent)
-        .with_initialization_script(INTIALIZATION_SCRIPT)
+        .with_initialization_script(initialization_script)
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();
             let window_key = window_key.clone();
@@ -87,8 +97,8 @@ pub fn create_webview(
                 let _ = wv.set_bounds(Rect {
                     position: LogicalPosition::new(WEBVIEW_GAP, WEBVIEW_GAP).into(),
                     size: LogicalSize::new(
-                        webview_config.width as f64 - WEBVIEW_GAP * 2.0,
-                        webview_config.height as f64 - WEBVIEW_GAP * 2.0,
+                        webview_config.width - WEBVIEW_GAP * 2.0,
+                        webview_config.height - WEBVIEW_GAP * 2.0,
                     )
                     .into(),
                 });

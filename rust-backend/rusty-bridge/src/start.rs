@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 use crate::{
     commands::{
         close_window, create_window, maximize_window, minimize_window, move_window, resize_window,
-        restore_window, set_decoration,
+        restore_window, send_msg_to_window_by_selector, set_decoration,
     },
     commands_registry::{Command, CommandsRegistry},
     globals::Globals,
@@ -65,14 +65,29 @@ impl RustyBridgeBuilder {
         let mut commands_registry = self.commands_registry.take().unwrap();
 
         // Window management commands
-        commands_registry.register_command(minimize_window());
-        commands_registry.register_command(maximize_window());
-        commands_registry.register_command(restore_window());
-        commands_registry.register_command(move_window());
-        commands_registry.register_command(set_decoration());
-        commands_registry.register_command(create_window());
-        commands_registry.register_command(resize_window());
-        commands_registry.register_command(close_window());
+        // commands_registry.register_command(minimize_window());
+        // commands_registry.register_command(maximize_window());
+        // commands_registry.register_command(restore_window());
+        // commands_registry.register_command(move_window());
+        // commands_registry.register_command(set_decoration());
+        // commands_registry.register_command(create_window());
+        // commands_registry.register_command(resize_window());
+        // commands_registry.register_command(close_window());
+
+        // Window management commands
+        for c in [
+            minimize_window(),
+            maximize_window(),
+            restore_window(),
+            move_window(),
+            set_decoration(),
+            create_window(),
+            resize_window(),
+            close_window(),
+            send_msg_to_window_by_selector(),
+        ] {
+            commands_registry.register_command(c);
+        }
 
         for c in commands {
             commands_registry.register_command(c);

@@ -13,7 +13,7 @@ use crate::tasks_ipc_handler::tasks_ipc_handler;
 use crate::user_events::{
     CustomEventHandler, ResizeDirection, UserEvent, WebviewEvent, WindowEvent,
 };
-use crate::utils::get_field_as_string;
+use crate::utils::{construct_js_event, get_field_as_string};
 use crate::webview_windows_manager::{WebViewWindow, WebViewWindowSetup};
 use std::os::raw::c_void;
 use std::sync::Arc;
@@ -114,6 +114,20 @@ pub fn user_events_handler(
                     main_thread_states
                         .webview_windows_manager
                         .remove_webview_window(window_key);
+                }
+
+                WindowEvent::SendMsgToWindowBySelector(selector, msg) => {
+                    let webview_window = main_thread_states
+                        .webview_windows_manager
+                        .get_webview_window_by_selector(selector);
+
+                    if let Some(ww) = webview_window {
+                        //TODO: Change event name
+                        let js_event = construct_js_event("window_ipc_com", msg);
+
+                        let _ = ww.webview.evaluate_script(&js_event);
+                        println!("Found it: {selector}, event: {js_event}");
+                    }
                 }
 
                 //TODO: Might be removed

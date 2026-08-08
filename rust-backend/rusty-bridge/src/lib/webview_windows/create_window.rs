@@ -1,5 +1,5 @@
 use tao::{
-    dpi::LogicalSize,
+    dpi::{LogicalPosition, LogicalSize},
     event_loop::EventLoopWindowTarget,
     platform::windows::WindowBuilderExtWindows,
     window::{Window, WindowBuilder},
@@ -19,14 +19,17 @@ pub fn create_window(
         .with_decorations(window_config.decoration)
         .with_undecorated_shadow(window_config.shadow)
         .with_resizable(window_config.resizable)
-        .with_inner_size(LogicalSize::new(
-            window_config.width as f64,
-            window_config.height as f64,
-        ))
+        .with_inner_size(LogicalSize::new(window_config.width, window_config.height))
         .build(event_loop);
 
     match window {
-        Ok(w) => Ok(w),
+        Ok(w) => {
+            if let Some(p) = &window_config.position {
+                w.set_outer_position(LogicalPosition::new(p.x, p.y));
+            }
+
+            Ok(w)
+        }
         Err(e) => Err(e.to_string()),
     }
 }

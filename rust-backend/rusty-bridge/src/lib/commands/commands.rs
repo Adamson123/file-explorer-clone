@@ -94,3 +94,18 @@ command_struct!(close_window, |a, g| {
     ));
     Ok(String::new())
 });
+
+command_struct!(send_msg_to_window_by_selector, |a, g| {
+    let selector = get_field_as_string(&a, "selector");
+    let msg = a.get("msg");
+    let window_key = get_field_as_string(a, "window_key");
+
+    //println!("Msg: {a}");
+
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        window_key.clone(),
+        WindowEvent::SendMsgToWindowBySelector(selector, json!({"data":msg, "from":window_key})),
+    ));
+
+    Ok(String::from("Sent"))
+});

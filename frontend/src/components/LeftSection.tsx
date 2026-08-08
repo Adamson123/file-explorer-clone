@@ -106,7 +106,7 @@ const LeftSection = ({
     set_active_shortcut: ReactSetStateAction<string>;
     // current_path_data: PathData;
     active_shortcut: string;
-    update_nav_history: (p: string, c: string) => void;
+    update_nav_history: (p: string, c: string, i: boolean) => void;
 }) => {
     const shortcut_onclick = (path: string) => {
         set_current_path_data({
@@ -114,7 +114,7 @@ const LeftSection = ({
             shortcut: path,
         });
         set_active_shortcut(path);
-        update_nav_history(path, path);
+        update_nav_history(path, path, true);
     };
 
     return (
