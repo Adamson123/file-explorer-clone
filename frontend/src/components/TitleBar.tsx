@@ -90,7 +90,7 @@ const TitleBar = ({
             {/* Left */}
 
             <div className="flex items-center">
-                <button
+                {/* <button
                     className="cursor-pointer"
                     move-window="false"
                     // onClick={async () => {
@@ -144,7 +144,7 @@ const TitleBar = ({
                     }}
                 >
                     Send Msg
-                </button>
+                </button> */}
 
                 <button
                     move-window="false"

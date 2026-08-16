@@ -1,6 +1,6 @@
 import { ChevronRight, Pin } from "lucide-react";
 import type { ReactSetStateAction } from "../type";
-import type { PathData } from "../App";
+import type { PathData } from "../pages/Main";
 
 const quick_access = [
     {
@@ -81,10 +81,11 @@ const ShortcutCard = ({
 }) => {
     return (
         <div
+            data-path={path}
             onClick={() => {
                 shortcut_onclick(path);
             }}
-            className={`flex items-center gap-1.5 p-2.5 cursor-pointer hover:bg-gray-400/10 rounded-lg transition-colors duration-100 ${
+            className={`dir_content flex items-center gap-1.5 p-2.5 cursor-pointer hover:bg-gray-400/10 rounded-lg transition-colors duration-100 ${
                 active_shortcut === path && "bg-gray-400/10"
             }`}
         >
@@ -141,9 +142,6 @@ const LeftSection = ({
                             key={index}
                             active_shortcut={active_shortcut}
                             shortcut_onclick={shortcut_onclick}
-                            //  set_active_shortcut={set_active_shortcut}
-                            // current_path_data={current_path_data}
-                            //  set_current_path_data={set_current_path_data}
                         />
                     ))}
                 </div>
@@ -159,9 +157,6 @@ const LeftSection = ({
                             {...item}
                             key={index}
                             active_shortcut={active_shortcut}
-                            //  set_active_shortcut={set_active_shortcut}
-                            // current_path_data={current_path_data}
-                            //  set_current_path_data={set_current_path_data}
                             shortcut_onclick={shortcut_onclick}
                             OtherElements={
                                 <Pin className="size-3.5 text-gray-400 rotate-45 ml-auto" />

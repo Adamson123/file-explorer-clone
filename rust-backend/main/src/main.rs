@@ -3,7 +3,7 @@ use file_explorer_clone::{
     states::{AppState, LastDirInfo},
     tasks::monitor_dir,
 };
-use rusty_bridge::start::RustyBridgeBuilder;
+use rusty_bridge::{start::RustyBridgeBuilder, utils::construct_js_event};
 use serde_json::json;
 use tao::event::Event;
 use tokio::sync::Mutex;
@@ -35,14 +35,33 @@ async fn main() {
                 }
             }
         })
-        //Install Tao to handle window events
-        .handle_window_event(move |e, _m| {
+        .handle_window_event(move |e, m| {
             match e {
                 Event::WindowEvent {
                     window_id: _,
                     event: tao::event::WindowEvent::Resized(_size),
                     ..
                 } => {}
+
+                Event::WindowEvent {
+                    window_id,
+                    event: tao::event::WindowEvent::Focused(b),
+                    ..
+                } => {
+                    let webview_window = m
+                        .webview_windows_manager
+                        .get_webview_window_by_tao_window_id(window_id);
+
+                    if let Some(ww) = webview_window {
+                        let js_event = construct_js_event(
+                            "window_event",
+                            &json!({ "type":"focused", "value": b }),
+                        );
+                        println!("Sent event value: {} to: {}", ww.selector, b);
+                        let _ = ww.webview.evaluate_script(&js_event);
+                    }
+                }
+
                 _ => {}
             };
         })

@@ -22,6 +22,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct WebviewWindowSize {
+    pub width: f32,
+    pub height: f32,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WebviewWindowPosition {
     pub x: f32,
     pub y: f32,
@@ -34,8 +40,9 @@ pub struct WebViewWindowConfig {
     pub parent_window_key: String,
     pub selector: String,
     pub position: Option<WebviewWindowPosition>,
-    pub width: f64,
-    pub height: f64,
+    pub size: Option<WebviewWindowSize>,
+    // pub width: f64,
+    // pub height: f64,
     pub decoration: bool,
     pub transparent: bool,
     pub shadow: bool,
@@ -48,8 +55,7 @@ pub struct WindowConfig {
     pub icon_path: String,
     pub parent_window_key: String,
     pub position: Option<WebviewWindowPosition>,
-    pub width: f64,
-    pub height: f64,
+    pub size: Option<WebviewWindowSize>,
     pub decoration: bool,
     pub transparent: bool,
     pub shadow: bool,
@@ -60,16 +66,15 @@ pub struct WindowConfig {
 pub struct WebViewConfig {
     pub url: String,
     pub transparent: bool,
-    pub width: f64,
-    pub height: f64,
+    // pub width: f64,
+    // pub height: f64,
 }
 
 impl WebViewWindowConfig {
     pub fn window_config(&self) -> WindowConfig {
         WindowConfig {
             window_name: self.window_name.clone(),
-            width: self.width,
-            height: self.height,
+            size: self.size.clone(),
             decoration: self.decoration,
             transparent: self.transparent,
             icon_path: self.icon_path.clone(),
@@ -84,8 +89,6 @@ impl WebViewWindowConfig {
         WebViewConfig {
             url: self.url.clone(),
             transparent: self.transparent,
-            width: self.width,
-            height: self.height,
         }
     }
 }
@@ -114,6 +117,13 @@ impl WebViewWindowManager {
         &mut self,
         webview_window_setup: &WebViewWindowSetup,
     ) -> Result<String, String> {
+        // println!(
+        //     "Adding webview window with selector: {} and name: {}, obj: {:#?} ✅",
+        //     webview_window_setup.window_config.selector,
+        //     webview_window_setup.window_config.window_name,
+        //     webview_window_setup.window_config
+        // );
+
         let window_key: String = Uuid::new_v4().to_string();
         let window_config: WindowConfig = webview_window_setup.window_config.window_config();
 
@@ -174,6 +184,7 @@ impl WebViewWindowManager {
         let webview = create_webview(
             &window,
             &window_key,
+            &webview_window_setup.window_config.selector,
             self.globals.clone(),
             &webview_window_setup.ipc_handler,
             &webview_config,
@@ -211,10 +222,6 @@ impl WebViewWindowManager {
             .find(|ww| ww.window.id() == *window_id)
     }
 
-    pub fn remove_webview_window(&mut self, key: &str) {
-        self.webview_windows.remove(key);
-    }
-
     pub fn get_webview_window_by_selector(&self, selector: &str) -> Option<&WebViewWindow> {
         self.webview_windows.values().find(|ww| {
             if !ww.selector.is_empty() {
@@ -223,5 +230,9 @@ impl WebViewWindowManager {
                 false
             }
         })
+    }
+
+    pub fn remove_webview_window(&mut self, key: &str) {
+        self.webview_windows.remove(key);
     }
 }

@@ -17,13 +17,17 @@ I don't know why but if you set transparent to true and you want it to take effe
 const webview_window_config = {
     window_name: "",
     url: "",
-    width: 600,
-    height: 500,
+
     decoration: true,
     icon_path: "",
     transparent: false,
     shadow: true,
     resizable: true,
+
+    size: null as null | {
+        width: number;
+        height: number;
+    },
     position: null as null | {
         x: number;
         y: number;
@@ -69,11 +73,26 @@ const close_window = async (): Promise<void> => {
     return await invoke_command("close_window");
 };
 
-const send_msg_to_window_by_selector = async (selector: string, msg: any) => {
+const send_msg_to_window_by_selector = async (
+    target_selector: string,
+    msg: any,
+) => {
     return await invoke_command("send_msg_to_window_by_selector", {
-        selector,
+        target_selector,
         msg,
     });
+};
+
+const set_visibility = async (visibility: boolean) => {
+    return await invoke_command("set_visibility", { visibility });
+};
+
+const set_position = async (position: { x: number; y: number }) => {
+    return await invoke_command("set_position", { position });
+};
+
+const set_size = async (size: { width: number; height: number }) => {
+    return await invoke_command("set_size", { size });
 };
 
 const resize_window = async (args: {
@@ -100,6 +119,9 @@ const window_commands = {
     maximize_window,
     restore_window,
     send_msg_to_window_by_selector,
+    set_visibility,
+    set_position,
+    set_size,
 };
 
 export default window_commands;

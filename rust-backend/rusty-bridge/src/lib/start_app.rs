@@ -13,7 +13,9 @@ use crate::{
     globals::Globals,
     user_events::{CustomEventHandler, UserEvent},
     user_events_handler::user_events_handler,
-    webview_windows_manager::{WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup},
+    webview_windows_manager::{
+        WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup, WebviewWindowSize,
+    },
 };
 
 pub struct MainThreadStates<'a> {
@@ -43,10 +45,12 @@ pub fn start_app(
         event_loop: &event_loop,
         ipc_handler: None,
         window_config: WebViewWindowConfig {
-            window_name: "Main Window".to_string(),
-            url: url.to_string(),
-            width: 900.0,
-            height: 600.0,
+            window_name: "Main Window".into(),
+            url: url.into(),
+            size: Some(WebviewWindowSize {
+                width: 900.0,
+                height: 600.0,
+            }),
             icon_path: String::new(),
             transparent: true,
             shadow: false,
@@ -54,7 +58,7 @@ pub fn start_app(
             resizable: true,
             position: None,
             parent_window_key: String::new(),
-            selector: String::new(),
+            selector: "main".into(),
         },
     };
 

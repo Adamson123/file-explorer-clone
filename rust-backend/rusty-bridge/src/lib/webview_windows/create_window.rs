@@ -19,13 +19,16 @@ pub fn create_window(
         .with_decorations(window_config.decoration)
         .with_undecorated_shadow(window_config.shadow)
         .with_resizable(window_config.resizable)
-        .with_inner_size(LogicalSize::new(window_config.width, window_config.height))
         .build(event_loop);
 
     match window {
         Ok(w) => {
             if let Some(p) = &window_config.position {
                 w.set_outer_position(LogicalPosition::new(p.x, p.y));
+            }
+
+            if let Some(s) = &window_config.size {
+                w.set_inner_size(LogicalSize::new(s.width, s.height));
             }
 
             Ok(w)

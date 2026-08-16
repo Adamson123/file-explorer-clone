@@ -4,7 +4,7 @@ use crate::{
     command, command_struct,
     user_events::{ResizeDirection, UserEvent, WindowEvent},
     utils::{get_field_as_bool, get_field_as_string, put_value_in_result},
-    webview_windows_manager::WebViewWindowConfig,
+    webview_windows_manager::{WebViewWindowConfig, WebviewWindowPosition, WebviewWindowSize},
 };
 
 command!(log, |a, _g| {
@@ -96,16 +96,49 @@ command_struct!(close_window, |a, g| {
 });
 
 command_struct!(send_msg_to_window_by_selector, |a, g| {
-    let selector = get_field_as_string(&a, "selector");
+    let target_selector = get_field_as_string(&a, "target_selector");
+    let sender_selector = get_field_as_string(&a, "sender_selector");
     let msg = a.get("msg");
     let window_key = get_field_as_string(a, "window_key");
 
-    //println!("Msg: {a}");
-
+    //  println!("Msg: {a}");
     let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
         window_key.clone(),
-        WindowEvent::SendMsgToWindowBySelector(selector, json!({"data":msg, "from":window_key})),
+        WindowEvent::SendMsgToWindowBySelector(
+            target_selector,
+            json!({"data":msg, "from":{"window_key":window_key, "selector":sender_selector}}),
+        ),
     ));
 
     Ok(String::from("Sent"))
+});
+
+command_struct!(set_visibility, |a, g| {
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::SetVisibility(get_field_as_bool(a, "visibility")),
+    ));
+    Ok(String::new())
+});
+
+command_struct!(set_position, |a, g| {
+    let p = a.get("position").unwrap_or(&json!({})).to_owned();
+    let position: WebviewWindowPosition = serde_json::from_value(p).map_err(|e| e.to_string())?;
+
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::SetPosition(position),
+    ));
+    Ok(String::new())
+});
+
+command_struct!(set_size, |a, g| {
+    let s = a.get("size").unwrap_or(&json!({})).to_owned();
+    let size: WebviewWindowSize = serde_json::from_value(s).map_err(|e| e.to_string())?;
+
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::SetSize(size),
+    ));
+    Ok(String::new())
 });

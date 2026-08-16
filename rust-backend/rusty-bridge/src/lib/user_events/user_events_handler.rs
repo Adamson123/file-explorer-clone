@@ -1,4 +1,5 @@
 use serde_json::{json, Value};
+use tao::dpi::{LogicalPosition, LogicalSize};
 use tao::platform::windows::WindowExtWindows;
 use windows::Win32::Foundation::{HWND, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
@@ -36,29 +37,21 @@ pub fn user_events_handler(
     };
 
     match event {
-        UserEvent::IPCMessage(window_key, msg) => {
+        UserEvent::IPCMessage(window_key, selector, msg) => {
             let def = json!({});
             let msg: Value = serde_json::from_str(msg.body()).unwrap_or(def.clone());
             let msg_type = get_field_as_string(&msg, "msg_type");
             let body = msg.get("body").cloned().unwrap_or(def.clone());
 
             if msg_type == "task" {
-                tasks_ipc_handler(window_key, &body, main_thread_states.globals.clone());
+                tasks_ipc_handler(window_key, &body, Arc::clone(&main_thread_states.globals));
             } else {
-                let key = window_key.clone();
-                //TODO: make commands_ipc_handler sync
-                tokio::task::spawn({
-                    // Clone the outer `msg`.
-                    // The original `msg` remains owned by the outer scope.
-                    let body = body.clone();
-                    // The logic applies here too.
-                    let globals_clone = Arc::clone(&main_thread_states.globals);
-                    // Move the cloned String into the async task.
-                    async move {
-                        // Borrow the task-owned String for the duration of this call.
-                        commands_ipc_handler(&key, &body, globals_clone).await
-                    }
-                });
+                commands_ipc_handler(
+                    window_key,
+                    selector,
+                    &body,
+                    Arc::clone(&main_thread_states.globals),
+                );
             }
         }
 
@@ -124,10 +117,55 @@ pub fn user_events_handler(
                     if let Some(ww) = webview_window {
                         //TODO: Change event name
                         let js_event = construct_js_event("window_ipc_com", msg);
-
                         let _ = ww.webview.evaluate_script(&js_event);
-                        println!("Found it: {selector}, event: {js_event}");
+                        // println!(
+                        //     "Sent message to window with selector {}: {}",
+                        //     selector, js_event
+                        // );
+                    } else {
+                        println!(
+                            "No window found with selector {} inside selectors {}. Message not sent.",
+                            selector,
+                            main_thread_states
+                                .webview_windows_manager
+                                .webview_windows
+                                .values()
+                                .map(|ww| ww.selector.clone())
+                                .collect::<Vec<String>>()
+                                .join(", ")
+                        );
                     }
+                }
+
+                WindowEvent::SetVisibility(visibility) => {
+                    webview_window.window.set_visible(*visibility);
+                }
+
+                WindowEvent::SetPosition(position) => {
+                    if webview_window.parent_window_key.is_empty() {
+                        webview_window
+                            .window
+                            .set_outer_position(LogicalPosition::new(position.x, position.y));
+                    } else {
+                        let parent = main_thread_states
+                            .webview_windows_manager
+                            .get_webview_window(&webview_window.parent_window_key);
+
+                        if let Some(p) = parent {
+                            let parent_outer_position = p.window.outer_position().unwrap();
+                            let new_x = parent_outer_position.x + position.x as i32;
+                            let new_y = parent_outer_position.y + position.y as i32;
+                            webview_window
+                                .window
+                                .set_outer_position(LogicalPosition::new(new_x, new_y));
+                        }
+                    }
+                }
+
+                WindowEvent::SetSize(size) => {
+                    webview_window
+                        .window
+                        .set_inner_size(LogicalSize::new(size.width, size.height));
                 }
 
                 //TODO: Might be removed

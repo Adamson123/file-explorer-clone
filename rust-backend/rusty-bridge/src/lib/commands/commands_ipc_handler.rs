@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Error, Value};
+use serde_json::{Error, Value};
 use tao::event_loop::EventLoopProxy;
 
 use crate::{
@@ -45,7 +45,7 @@ pub async fn send_ipc_response(
     // );
 }
 
-pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<Globals>) {
+pub fn commands_ipc_handler(window_key: &str, selector: &str, body: &Value, globals: Arc<Globals>) {
     let ipc_msg: Result<CommandIPCMsg, Error> = serde_json::from_value(body.clone());
     if ipc_msg.is_err() {
         println!("Error parsing CommandIPCMsg: {}", ipc_msg.err().unwrap());
@@ -53,44 +53,38 @@ pub async fn commands_ipc_handler(window_key: &str, body: &Value, globals: Arc<G
     }
     let ipc_msg = ipc_msg.unwrap();
 
-    // println!(
-    //     "Received IPC message: {:?}, parsed to: {:?}",
-    //     body, ipc_msg.args
-    // );
-
     let mut args_map = ipc_msg
         .args
         .as_object()
         .cloned()
         .unwrap_or_else(|| serde_json::Map::new());
     // 2. Insert the new key into the Map
-    args_map.insert("window_key".to_string(), json!(window_key));
-
-    // println!(
-    //     "IPC message after adding window_key: {:?}",
-    //     serde_json::Value::Object(args_map.clone())
-    // );
+    args_map.insert("window_key".to_string(), window_key.into());
+    args_map.insert("sender_selector".to_string(), selector.into());
 
     // 3. Convert the Map into a Value (Object variant)
     let args: Value = Value::Object(args_map);
     let cmd = ipc_msg.cmd.clone();
     let request_id: String = ipc_msg.request_id.clone();
 
-    let command = {
-        let commands_register = globals.commands_register.lock().await;
-        commands_register.invoke_command(&cmd, &args, globals.clone())
-    };
+    let window_key = window_key.to_owned();
+    tokio::task::spawn(async move {
+        let command = {
+            let commands_register = globals.commands_register.lock().await;
+            commands_register.invoke_command(&cmd, &args, globals.clone())
+        };
 
-    let res = match command {
-        Ok(f) => f.await,
-        Err(e) => Err(e),
-    };
+        let res = match command {
+            Ok(f) => f.await,
+            Err(e) => Err(e),
+        };
 
-    send_ipc_response(
-        globals.event_loop_proxy.clone(),
-        &request_id,
-        window_key,
-        res,
-    )
-    .await;
+        send_ipc_response(
+            globals.event_loop_proxy.clone(),
+            &request_id,
+            &window_key,
+            res,
+        )
+        .await;
+    });
 }

@@ -2,7 +2,7 @@ import { File, LayoutListIcon, LucideLayoutGrid } from "lucide-react";
 import { useEffect } from "react";
 import useStartTask from "../hooks/task/useStartTask";
 import type { ReactSetStateAction } from "../type";
-import type { DirContents, PathData } from "../App";
+import type { DirContents, PathData } from "../pages/Main";
 
 const RightSection = ({
     current_path_data,
@@ -70,6 +70,7 @@ const RightSection = ({
                     >
                         <img src="./assets/folder.svg" className="size-4.5" />
                         <input
+                            onChange={() => {}}
                             value={current_path_data.path}
                             type="text"
                             placeholder="Search"
@@ -104,8 +105,7 @@ const RightSection = ({
                                     update_nav_history(content.path) //set_current_dir(content.path)
                             }
                             key={content.path}
-                            tabIndex={1}
-                            className="flex flex-col items-center cursor-pointer hover:bg-gray-400/10 transition-colors rounded-sm duration-100 py-2 focus:bg-gray-400/10 h-full"
+                            className="dir_content flex flex-col items-center cursor-pointer hover:bg-gray-400/10 transition-colors rounded-sm duration-100 py-2 h-full"
                         >
                             {content.is_dir ? (
                                 <img
