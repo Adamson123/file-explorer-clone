@@ -1,22 +1,20 @@
 use serde_json::{json, Value};
 use tao::dpi::{LogicalPosition, LogicalSize};
-use tao::platform::windows::WindowExtWindows;
-use windows::Win32::Foundation::{HWND, WPARAM};
-use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
-use windows::Win32::UI::WindowsAndMessaging::{
-    SendMessageW, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTLEFT, HTRIGHT, HTTOP, HTTOPLEFT,
-    HTTOPRIGHT, WM_NCLBUTTONDOWN,
-};
+//use tao::platform::windows::WindowExtWindows;
+//use windows::Win32::Foundation::{HWND, WPARAM};
+//use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
+// use windows::Win32::UI::WindowsAndMessaging::{
+//     SendMessageW, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTLEFT, HTRIGHT, HTTOP, HTTOPLEFT,
+//     HTTOPRIGHT, WM_NCLBUTTONDOWN,
+// };
 
 use crate::commands_ipc_handler::commands_ipc_handler;
 use crate::start_app::MainThreadStates;
 use crate::tasks_ipc_handler::tasks_ipc_handler;
-use crate::user_events::{
-    CustomEventHandler, ResizeDirection, UserEvent, WebviewEvent, WindowEvent,
-};
+use crate::user_events::{CustomEventHandler, UserEvent, WebviewEvent, WindowEvent};
 use crate::utils::{construct_js_event, get_field_as_string};
 use crate::webview_windows_manager::{WebViewWindow, WebViewWindowSetup};
-use std::os::raw::c_void;
+//use std::os::raw::c_void;
 use std::sync::Arc;
 
 pub fn user_events_handler(
@@ -30,7 +28,7 @@ pub fn user_events_handler(
     //     .webview_windows_manager
     //     .get_webview_window(main_window_key);
 
-    let get_webview_and_unwrap = |window_key: &str| -> &WebViewWindow {
+    let _get_webview_and_unwrap = |window_key: &str| -> &WebViewWindow {
         main_thread_states
             .webview_windows_manager
             .get_webview_window(window_key)
@@ -60,7 +58,7 @@ pub fn user_events_handler(
             let new_window_config = WebViewWindowSetup {
                 event_loop: main_thread_states.event_loop,
                 ipc_handler: None,
-                window_config: w.clone(),
+                webview_window_config: w.clone(),
             };
 
             let _id = main_thread_states
@@ -158,6 +156,7 @@ pub fn user_events_handler(
 
                 WindowEvent::SetPosition(position) => {
                     if webview_window.parent_window_key.is_empty() {
+                        println!("No parent");
                         webview_window
                             .window
                             .set_outer_position(LogicalPosition::new(position.x, position.y));
@@ -167,12 +166,31 @@ pub fn user_events_handler(
                             .get_webview_window(&webview_window.parent_window_key);
 
                         if let Some(p) = parent {
-                            let parent_outer_position = p.window.outer_position().unwrap();
-                            let new_x = parent_outer_position.x + position.x as i32;
-                            let new_y = parent_outer_position.y + position.y as i32;
-                            webview_window
-                                .window
-                                .set_outer_position(LogicalPosition::new(new_x, new_y));
+                            // let window_config = WindowConfig {
+                            //     window_name: webview_window.selector.clone(),
+                            //     icon_path: String::new(),
+                            //     parent_window_key: webview_window.parent_window_key.clone(),
+                            //     position: Some(position.clone()),
+                            //     size: None,
+                            //     decoration: false,
+                            //     transparent: false,
+                            //     shadow: false,
+                            //     resizable: true,
+                            //     visibility: true,
+                            // };
+
+                            main_thread_states
+                                .webview_windows_manager
+                                .set_position_relative_to_parent(
+                                    &position,
+                                    &webview_window.window,
+                                    p,
+                                    &webview_window.kind,
+                                );
+                            // println!(
+                            //     "Yes parent: {}, Position: {:#?}",
+                            //     webview_window.parent_window_key, position
+                            // );
                         }
                     }
                 }
@@ -184,27 +202,27 @@ pub fn user_events_handler(
                 }
 
                 //TODO: Might be removed
-                WindowEvent::ResizeWindow(direction) => {
-                    let ht = match direction {
-                        ResizeDirection::Top => HTTOP,
-                        ResizeDirection::Bottom => HTBOTTOM,
-                        ResizeDirection::Left => HTLEFT,
-                        ResizeDirection::Right => HTRIGHT,
-                        ResizeDirection::TopLeft => HTTOPLEFT,
-                        ResizeDirection::TopRight => HTTOPRIGHT,
-                        ResizeDirection::BottomLeft => HTBOTTOMLEFT,
-                        ResizeDirection::BottomRight => HTBOTTOMRIGHT,
-                        ResizeDirection::None => return,
-                    };
+                WindowEvent::ResizeWindow(_direction) => {
+                    // let ht = match direction {
+                    //     ResizeDirection::Top => HTTOP,
+                    //     ResizeDirection::Bottom => HTBOTTOM,
+                    //     ResizeDirection::Left => HTLEFT,
+                    //     ResizeDirection::Right => HTRIGHT,
+                    //     ResizeDirection::TopLeft => HTTOPLEFT,
+                    //     ResizeDirection::TopRight => HTTOPRIGHT,
+                    //     ResizeDirection::BottomLeft => HTBOTTOMLEFT,
+                    //     ResizeDirection::BottomRight => HTBOTTOMRIGHT,
+                    //     ResizeDirection::None => return,
+                    // };
 
-                    let webview_window = get_webview_and_unwrap(&window_key);
+                    // let webview_window = get_webview_and_unwrap(&window_key);
 
-                    unsafe {
-                        let hwnd = HWND(webview_window.window.hwnd() as *mut c_void);
+                    // unsafe {
+                    //     let hwnd = HWND(webview_window.window.hwnd() as *mut c_void);
 
-                        let _ = ReleaseCapture();
-                        SendMessageW(hwnd, WM_NCLBUTTONDOWN, Some(WPARAM(ht as usize)), None);
-                    }
+                    //     let _ = ReleaseCapture();
+                    //     SendMessageW(hwnd, WM_NCLBUTTONDOWN, Some(WPARAM(ht as usize)), None);
+                    // }
                 }
             }
         }

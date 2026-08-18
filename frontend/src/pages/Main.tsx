@@ -131,6 +131,8 @@ const Main = () => {
             dir_content: null,
         };
 
+        console.log(position);
+
         if (!dir_content) {
             return position;
         }
@@ -332,6 +334,7 @@ const Main = () => {
                                     shadow: false,
                                     transparent: true,
                                     visibility: false,
+                                    kind: "Tool",
                                 });
                                 is_context_menu_created_ref.current = true;
                                 const menu_onload: any = async (
@@ -357,9 +360,8 @@ const Main = () => {
                                 );
                             } else {
                                 await update_menu();
-                                set_menu_visibility(true);
-
                                 await update_menu_position(clientX, clientY);
+                                set_menu_visibility(true);
                             }
                         } catch (error) {
                             console.log("Error creating context menu:", error);

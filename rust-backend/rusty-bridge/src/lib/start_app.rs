@@ -15,6 +15,7 @@ use crate::{
     user_events_handler::user_events_handler,
     webview_windows_manager::{
         WebViewWindowConfig, WebViewWindowManager, WebViewWindowSetup, WebviewWindowSize,
+        WindowKind,
     },
 };
 
@@ -44,7 +45,7 @@ pub fn start_app(
     let main_window_config = WebViewWindowSetup {
         event_loop: &event_loop,
         ipc_handler: None,
-        window_config: WebViewWindowConfig {
+        webview_window_config: WebViewWindowConfig {
             window_name: "Main Window".into(),
             url: url.into(),
             size: Some(WebviewWindowSize {
@@ -60,6 +61,7 @@ pub fn start_app(
             parent_window_key: String::new(),
             selector: "main".into(),
             visibility: true,
+            kind: WindowKind::App,
         },
     };
 
@@ -69,9 +71,10 @@ pub fn start_app(
         eprintln!("Failed to create main window: {}", e);
         return;
     }
-    let main_window_key = main_window_key.unwrap();
 
+    let main_window_key = main_window_key.unwrap();
     let mut is_maximized = false;
+
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {
             *control_flow = tao::event_loop::ControlFlow::Wait;

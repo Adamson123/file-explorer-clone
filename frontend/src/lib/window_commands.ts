@@ -35,6 +35,7 @@ const webview_window_config = {
     },
     parent_window_key: "",
     selector: "",
+    kind: "App" as "App" | "Tool" | "Popup",
 };
 
 const create_window = async (

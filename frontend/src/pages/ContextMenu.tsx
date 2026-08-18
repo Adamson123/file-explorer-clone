@@ -212,7 +212,7 @@ const ContextMenu = () => {
                     const new_height = entry.contentRect.height + 10;
                     window_commands.set_size({
                         width: 250,
-                        height: new_height + 16,
+                        height: new_height,
                     });
                 }
             }
@@ -240,7 +240,7 @@ const ContextMenu = () => {
     return (
         <main
             onContextMenu={(e) => e.preventDefault()}
-            className="w-screen h-screen p-2 bg-transparent select-none"
+            className="w-screen h-screen bg-transparent select-none"
         >
             <div className="w-full h-full bg-primary rounded-md shadow-2xl border border-gray-400/10 overflow-hidden">
                 <div className="flex flex-col menu py-1">

@@ -57,7 +57,7 @@ async fn main() {
                             "window_event",
                             &json!({ "type":"focused", "value": b }),
                         );
-                        println!("Sent event value: {} to: {}", ww.selector, b);
+                        //   println!("Sent event value: {} to: {}", ww.selector, b);
                         let _ = ww.webview.evaluate_script(&js_event);
                     }
                 }

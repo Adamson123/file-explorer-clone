@@ -77,6 +77,9 @@ pub fn create_webview(
     let webview = WebViewBuilder::new()
         .with_url(&webview_config.url)
         .with_transparent(webview_config.transparent)
+        // This is ignored for transparent webviews, but gives opaque popup
+        // surfaces the same base colour as the context menu.
+        .with_background_color((23, 23, 23, 255))
         .with_initialization_script(initialization_script)
         .with_ipc_handler(move |msg| {
             let msg_clone = msg.clone();

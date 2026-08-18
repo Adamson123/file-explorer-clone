@@ -22,11 +22,13 @@ uuid = {version="1", features=["v4"]}
 version = ">=0.59, <=0.62"
 features = [
    #"Data_Xml_Dom",
-    "Win32_Foundation",
    #"Win32_Security",
-    "Win32_System_Threading",
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",           
     "Win32_UI_WindowsAndMessaging",
-    "Win32_UI_Input_KeyboardAndMouse",
-    "Win32_Graphics_Gdi",
-    "Win32_System_LibraryLoader",
+    "Win32_UI_Controls"
+ #"Win32_System_Threading",
+#"Win32_UI_Input_KeyboardAndMouse",
+# "Win32_Graphics_Gdi",
+ #   "Win32_System_LibraryLoader",
 ]

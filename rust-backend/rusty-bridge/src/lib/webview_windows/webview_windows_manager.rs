@@ -10,7 +10,10 @@ use tao::{
 use uuid::Uuid;
 use windows::Win32::{
     Foundation::HWND,
-    UI::WindowsAndMessaging::{SetWindowLongPtrW, GWLP_HWNDPARENT},
+    UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWLP_HWNDPARENT, GWL_EXSTYLE, GWL_STYLE, WS_BORDER,
+        WS_CAPTION, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW, WS_POPUP, WS_SYSMENU, WS_THICKFRAME,
+    },
 };
 use wry::WebView;
 
@@ -32,6 +35,14 @@ pub struct WebviewWindowPosition {
     pub x: f32,
     pub y: f32,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum WindowKind {
+    App,
+    Tool,
+    Popup,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WebViewWindowConfig {
     pub window_name: String,
@@ -46,6 +57,7 @@ pub struct WebViewWindowConfig {
     pub shadow: bool,
     pub resizable: bool,
     pub visibility: bool,
+    pub kind: WindowKind,
 }
 
 #[derive(Debug, Clone)]
@@ -74,7 +86,10 @@ impl WebViewWindowConfig {
             window_name: self.window_name.clone(),
             size: self.size.clone(),
             decoration: self.decoration,
-            transparent: self.transparent,
+            // A transparent WebView2 popup can expose colored compositor pixels at
+            // its rounded DOM corners. Popups are therefore always opaque at the
+            // native-surface level; their page still controls the visible menu UI.
+            transparent: self.transparent && !matches!(self.kind, WindowKind::Popup),
             icon_path: self.icon_path.clone(),
             shadow: self.shadow,
             resizable: self.resizable,
@@ -87,13 +102,13 @@ impl WebViewWindowConfig {
     pub fn webview_config(&self) -> WebViewConfig {
         WebViewConfig {
             url: self.url.clone(),
-            transparent: self.transparent,
+            transparent: self.transparent && !matches!(self.kind, WindowKind::Popup),
         }
     }
 }
 
 pub struct WebViewWindowSetup<'a> {
-    pub window_config: WebViewWindowConfig,
+    pub webview_window_config: WebViewWindowConfig,
     pub event_loop: &'a EventLoopWindowTarget<UserEvent>,
     pub ipc_handler: Option<IPCHandler>,
 }
@@ -104,6 +119,7 @@ pub struct WebViewWindow {
     pub key: String,
     pub selector: String,
     pub parent_window_key: String,
+    pub kind: WindowKind,
 }
 
 pub struct WebViewWindowManager {
@@ -117,7 +133,8 @@ impl WebViewWindowManager {
         webview_window_setup: &WebViewWindowSetup,
     ) -> Result<String, String> {
         let window_key: String = Uuid::new_v4().to_string();
-        let window_config: WindowConfig = webview_window_setup.window_config.window_config();
+        let window_config: WindowConfig =
+            webview_window_setup.webview_window_config.window_config();
 
         let window = create_window(&window_config, &webview_window_setup.event_loop);
 
@@ -127,56 +144,44 @@ impl WebViewWindowManager {
         let window = window.unwrap();
 
         //Attach to parent if a parent window key is provided
+        // self.attach_as_window_to_parent(&window_config, &window);
         if !window_config.parent_window_key.is_empty() {
             let parent = self.webview_windows.get(&window_config.parent_window_key);
 
             if let Some(p) = parent {
-                let parent_hwnd = p.window.hwnd();
-                let child_hwnd = window.hwnd();
-
-                println!(
-                    "Attaching window {} to parent {}",
-                    window_config.window_name, window_config.parent_window_key
-                );
-
-                unsafe {
-                    SetWindowLongPtrW(
-                        HWND(child_hwnd as *mut c_void),
-                        GWLP_HWNDPARENT,
-                        parent_hwnd,
-                    );
-                }
-
-                //Make child position relative to parent if a position is provided
-                if let Some(pos) = &window_config.position {
-                    let parent_outer_position = p.window.outer_position().unwrap();
-                    let new_x = parent_outer_position.x + pos.x as i32;
-                    let new_y = parent_outer_position.y + pos.y as i32;
-                    window.set_outer_position(LogicalPosition::new(new_x, new_y));
+                match webview_window_setup.webview_window_config.kind {
+                    WindowKind::App => self.attach_as_window_to_parent(&window_config, &window, p),
+                    WindowKind::Tool => self.attach_as_tool_to_parent(&window_config, &window, p),
+                    WindowKind::Popup => self.attach_as_popup_to_parent(&window_config, &window, p),
                 }
             }
         }
 
         //If selector is provided, check if a window with that selector already exists, if so, return an error
-        if !webview_window_setup.window_config.selector.is_empty() {
+        if !webview_window_setup
+            .webview_window_config
+            .selector
+            .is_empty()
+        {
             let existing_window = self
                 .webview_windows
                 .values()
-                .find(|ww| ww.key == webview_window_setup.window_config.selector);
+                .find(|ww| ww.key == webview_window_setup.webview_window_config.selector);
 
             if let Some(existing_window) = existing_window {
                 return Err(format!(
                     "A window with the selector '{}' already exists. Window key: {}",
-                    webview_window_setup.window_config.selector, existing_window.key
+                    webview_window_setup.webview_window_config.selector, existing_window.key
                 ));
             }
         }
 
-        let webview_config: WebViewConfig = webview_window_setup.window_config.webview_config();
+        let webview_config: WebViewConfig =
+            webview_window_setup.webview_window_config.webview_config();
         let webview = create_webview(
             &window,
             &window_key,
-            &webview_window_setup.window_config.selector,
+            &webview_window_setup.webview_window_config.selector,
             self.globals.clone(),
             &webview_window_setup.ipc_handler,
             &webview_config,
@@ -194,11 +199,198 @@ impl WebViewWindowManager {
                 webview,
                 key: window_key.clone(),
                 parent_window_key: window_config.parent_window_key.clone(),
-                selector: webview_window_setup.window_config.selector.clone(),
+                selector: webview_window_setup.webview_window_config.selector.clone(),
+                kind: webview_window_setup.webview_window_config.kind.clone(),
             },
         );
 
         Ok(window_key)
+    }
+
+    pub fn set_parent(&self, child_hwnd: isize, parent_hwnd: isize) {
+        unsafe {
+            SetWindowLongPtrW(
+                HWND(child_hwnd as *mut c_void),
+                GWLP_HWNDPARENT,
+                HWND(parent_hwnd as *mut c_void).0 as isize,
+            );
+        }
+    }
+
+    pub fn attach_as_window_to_parent(
+        &self,
+        window_config: &WindowConfig,
+        window: &Window,
+        parent: &WebViewWindow,
+    ) {
+        let parent_hwnd = parent.window.hwnd();
+        let child_hwnd = window.hwnd();
+
+        println!(
+            "Attaching window {} to parent {}",
+            window_config.window_name, window_config.parent_window_key
+        );
+
+        self.set_parent(child_hwnd, parent_hwnd);
+
+        //Make child position relative to parent if a position is provided
+        if let Some(pos) = &window_config.position {
+            self.set_position_relative_to_parent(pos, window, parent, &WindowKind::App);
+        }
+    }
+
+    pub fn apply_tool_window_style(&self, window: &Window) {
+        unsafe {
+            let hwnd = HWND(window.hwnd() as *mut c_void);
+            let style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+            SetWindowLongPtrW(
+                hwnd,
+                GWL_EXSTYLE,
+                (style & !(WS_EX_APPWINDOW.0 as isize)) | WS_EX_TOOLWINDOW.0 as isize,
+            );
+        }
+    }
+
+    pub fn apply_popup_window_style(&self, window: &Window) {
+        unsafe {
+            let hwnd = HWND(window.hwnd() as *mut c_void);
+            let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+            // let new_style =
+            //     (style & (WS_CAPTION.0 as isize | WS_SYSMENU.0 as isize)) | WS_POPUP.0 as isize;
+            let new_style = (style
+                & !(WS_CAPTION.0 as isize
+                    | WS_SYSMENU.0 as isize
+                    | WS_THICKFRAME.0 as isize
+                    | WS_BORDER.0 as isize))
+                | WS_POPUP.0 as isize;
+            SetWindowLongPtrW(hwnd, GWL_STYLE, new_style);
+        }
+        self.apply_tool_window_style(window);
+    }
+
+    // pub fn apply_popup_window_style(&self, window: &Window) {
+    //     unsafe {
+    //         let hwnd = HWND(window.hwnd() as *mut c_void);
+
+    //         // Keep the popup as a plain client area. Extending a DWM frame into a
+    //         // transparent window can leave compositor-drawn pixels around its edge.
+    //         let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    //         let clear_mask = WS_OVERLAPPED.0 as isize
+    //             | WS_CAPTION.0 as isize
+    //             | WS_SYSMENU.0 as isize
+    //             | WS_THICKFRAME.0 as isize
+    //             | WS_MINIMIZEBOX.0 as isize
+    //             | WS_MAXIMIZEBOX.0 as isize
+    //             | WS_BORDER.0 as isize;
+    //         let new_style = (style & !clear_mask) | WS_POPUP.0 as isize;
+    //         SetWindowLongPtrW(hwnd, GWL_STYLE, new_style);
+
+    //         // Remove every extended edge too; these can still render a thin colored
+    //         // non-client rim even when the normal caption and border are gone.
+    //         let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    //         let clear_ex_style = WS_EX_APPWINDOW.0 as isize
+    //             | WS_EX_CLIENTEDGE.0 as isize
+    //             | WS_EX_DLGMODALFRAME.0 as isize
+    //             | WS_EX_STATICEDGE.0 as isize
+    //             | WS_EX_WINDOWEDGE.0 as isize;
+    //         SetWindowLongPtrW(
+    //             hwnd,
+    //             GWL_EXSTYLE,
+    //             (ex_style & !clear_ex_style) | WS_EX_TOOLWINDOW.0 as isize,
+    //         );
+
+    //         // Disable Windows 11's non-client renderer for this popup. Without this,
+    //         // DWM can draw its own corner pixels even when WS_POPUP has no border.
+    //         let non_client_rendering = DWMNCRP_DISABLED;
+    //         let _ = DwmSetWindowAttribute(
+    //             hwnd,
+    //             DWMWA_NCRENDERING_POLICY,
+    //             &non_client_rendering as *const _ as *const _,
+    //             std::mem::size_of_val(&non_client_rendering) as u32,
+    //         );
+    //         let corner_preference = DWMWCP_DONOTROUND;
+    //         let _ = DwmSetWindowAttribute(
+    //             hwnd,
+    //             DWMWA_WINDOW_CORNER_PREFERENCE,
+    //             &corner_preference as *const _ as *const _,
+    //             std::mem::size_of_val(&corner_preference) as u32,
+    //         );
+
+    //         // Apply the new non-client style immediately.
+    //         let _ = SetWindowPos(
+    //             hwnd,
+    //             None,
+    //             0,
+    //             0,
+    //             0,
+    //             0,
+    //             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
+    //         );
+
+    //     }
+    // }
+
+    pub fn attach_as_tool_to_parent(
+        &self,
+        window_config: &WindowConfig,
+        window: &Window,
+        parent: &WebViewWindow,
+    ) {
+        let parent_hwnd = parent.window.hwnd();
+        let child_hwnd = window.hwnd();
+
+        println!(
+            "Attaching tool {} to parent {}",
+            window_config.window_name, window_config.parent_window_key
+        );
+
+        self.apply_tool_window_style(window);
+        self.set_parent(child_hwnd, parent_hwnd);
+
+        if let Some(pos) = &window_config.position {
+            self.set_position_relative_to_parent(pos, window, parent, &WindowKind::Tool);
+        }
+    }
+
+    pub fn attach_as_popup_to_parent(
+        &self,
+        window_config: &WindowConfig,
+        window: &Window,
+        parent: &WebViewWindow,
+    ) {
+        let parent_hwnd = parent.window.hwnd();
+        let child_hwnd = window.hwnd();
+
+        println!(
+            "Attaching popup {} to parent {}",
+            window_config.window_name, window_config.parent_window_key
+        );
+
+        self.apply_popup_window_style(window);
+        self.set_parent(child_hwnd, parent_hwnd);
+
+        if let Some(pos) = &window_config.position {
+            self.set_position_relative_to_parent(pos, window, parent, &WindowKind::Popup);
+        }
+    }
+
+    pub fn set_position_relative_to_parent(
+        &self,
+        position: &WebviewWindowPosition,
+        window: &Window,
+        parent: &WebViewWindow,
+        kind: &WindowKind,
+    ) {
+        let parent_outer_position = parent.window.outer_position().unwrap();
+        let new_x = parent_outer_position.x + position.x as i32;
+        let new_y = parent_outer_position.y + position.y as i32;
+        window.set_outer_position(LogicalPosition::new(new_x, new_y));
+
+        match kind {
+            WindowKind::Tool => self.apply_tool_window_style(window),
+            WindowKind::Popup => self.apply_popup_window_style(window),
+            WindowKind::App => {}
+        }
     }
 
     pub fn get_webview_window(&self, key: &str) -> Option<&WebViewWindow> {
