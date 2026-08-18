@@ -105,6 +105,7 @@ const RightSection = ({
                                     update_nav_history(content.path) //set_current_dir(content.path)
                             }
                             key={content.path}
+                            data-is-dir={content.is_dir}
                             className="dir_content flex flex-col items-center cursor-pointer hover:bg-gray-400/10 transition-colors rounded-sm duration-100 py-2 h-full"
                         >
                             {content.is_dir ? (

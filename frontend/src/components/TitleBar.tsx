@@ -1,6 +1,7 @@
 import {
     ArrowLeft,
     ArrowRight,
+    Copy,
     Minus,
     Square,
     SquaresUnite,
@@ -19,14 +20,16 @@ const TitleBar = ({
     nav_history,
     set_active_history_index,
     get_dir_contents_cmd,
+    is_maximized,
+    set_is_maximized,
 }: {
     active_history_index: number;
     set_active_history_index: ReactSetStateAction<number>;
+    set_is_maximized: ReactSetStateAction<boolean>;
+    is_maximized: boolean;
     nav_history: PathData[];
     get_dir_contents_cmd: (path: string) => Promise<void>;
 }) => {
-    const [is_maximized, set_is_maximized] = useState(false);
-
     const is_first = active_history_index === 0;
     const is_last = active_history_index === nav_history.length - 1;
 
@@ -173,7 +176,7 @@ const TitleBar = ({
                         }}
                         className="size-12 items-center flex justify-center cursor-pointer hover:bg-gray-400/10"
                     >
-                        <SquaresUnite className="text-gray-400 size-3" />
+                        <Copy className="text-gray-400 size-3" />
                     </button>
                 )}
                 <button

@@ -23,6 +23,7 @@ pub fn user_events_handler(
     event: &UserEvent,
     main_thread_states: &mut MainThreadStates,
     custom_event_handler: Arc<CustomEventHandler>,
+    is_maximized: &mut bool,
     _main_window_key: &str,
 ) {
     // let _main_webview_window = main_thread_states
@@ -86,9 +87,23 @@ pub fn user_events_handler(
                     // } else {
                     //     webview_window.window.set_minimized(false);
                     // }
+                    *is_maximized = false;
                     let _ = webview_window.window.set_minimized(true);
                 }
                 WindowEvent::MaximizeWindow => {
+                    // if webview_window.window.is_resizable() && !webview_window.window.is_decorated()
+                    // {
+                    //     let size = webview_window.window.inner_size();
+                    //     webview_window
+                    //         .webview
+                    //         .set_bounds(Rect {
+                    //             position: LogicalPosition::new(0.0, 0.0).into(),
+                    //             size: LogicalSize::new(size.width, size.height).into(),
+                    //         })
+                    //         .unwrap();
+                    //     println!("FULLSCREEN!!!")
+                    // }
+                    *is_maximized = true;
                     let _ = webview_window.window.set_maximized(true);
                 }
                 WindowEvent::RestoreWindow => {

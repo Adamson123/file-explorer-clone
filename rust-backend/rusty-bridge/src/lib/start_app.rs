@@ -59,6 +59,7 @@ pub fn start_app(
             position: None,
             parent_window_key: String::new(),
             selector: "main".into(),
+            visibility: true,
         },
     };
 
@@ -70,6 +71,7 @@ pub fn start_app(
     }
     let main_window_key = main_window_key.unwrap();
 
+    let mut is_maximized = false;
     event_loop.run(
         move |event: Event<'_, UserEvent>, event_loop, control_flow| {
             *control_flow = tao::event_loop::ControlFlow::Wait;
@@ -123,7 +125,10 @@ pub fn start_app(
                     {
                         //If resizeable and decoration is false, then we need to set the webview bounds to be smaller than the window size, otherwise the webview will cover the window border and make it look like the window is not resizeable.
 
-                        if webview.window.is_resizable() && !webview.window.is_decorated() {
+                        if webview.window.is_resizable()
+                            && !webview.window.is_decorated()
+                            && !is_maximized
+                        {
                             webview
                                 .webview
                                 .set_bounds(Rect {
@@ -136,6 +141,8 @@ pub fn start_app(
                                 })
                                 .unwrap();
                         }
+                        //  println!("IS MAX: {is_maximized}");
+                        is_maximized = false;
 
                         //   let hwnd = HWND(webview.window.hwnd() as *mut std::ffi::c_void);
                         //  set_window_radius(hwnd, size.width as i32, size.height as i32);
@@ -153,6 +160,7 @@ pub fn start_app(
                         &e,
                         &mut main_thread_states,
                         custom_event_handler_clone,
+                        &mut is_maximized,
                         &main_window_key,
                     );
                 }

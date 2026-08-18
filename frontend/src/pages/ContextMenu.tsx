@@ -1,13 +1,161 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import window_commands from "../lib/window_commands";
 
+const menu_option_names = {
+    COPY: "copy",
+    CUT: "cut",
+    DELETE: "delete",
+    NEW: "new",
+    OPEN_FOLDER: "open_folder",
+    OPEN_FILE: "open_file",
+    OPEN_IN_NEW_WINDOW: "open_in_new_window",
+    PIN: "pin",
+    PASTE: "paste",
+    PROPERTIES: "properties",
+    REFRESH: "refresh",
+    RENAME: "rename",
+};
+
+const LINE = "line";
+
+const current_dir_menu_options = [
+    menu_option_names.PASTE,
+    LINE,
+    menu_option_names.REFRESH,
+    LINE,
+    menu_option_names.NEW,
+    LINE,
+    menu_option_names.PROPERTIES,
+];
+
+const dir_menu_options = [
+    menu_option_names.OPEN_FOLDER,
+    menu_option_names.OPEN_IN_NEW_WINDOW,
+    menu_option_names.PIN,
+    LINE,
+    menu_option_names.CUT,
+    menu_option_names.COPY,
+    LINE,
+    menu_option_names.DELETE,
+    menu_option_names.RENAME,
+    LINE,
+    menu_option_names.PROPERTIES,
+];
+
+const file_menu_options = [
+    menu_option_names.OPEN_FILE,
+    LINE,
+    menu_option_names.CUT,
+    menu_option_names.COPY,
+    LINE,
+    menu_option_names.DELETE,
+    menu_option_names.RENAME,
+    LINE,
+    menu_option_names.PROPERTIES,
+];
+
+const menu_options: { [key: string]: string[] } = {
+    current_dir_menu_options,
+    dir_menu_options,
+    file_menu_options,
+};
+
+type MenuOption = {
+    name: string;
+    label: string;
+    func: () => void;
+};
+
+// window.addEventListener("DOMContentLoaded", async () => {
+//     await window_commands.send_msg_to_window_by_selector("main", {
+//         type: "is_loaded",
+//         value: true,
+//     });
+//     console.log("Sent DOM loaded");
+// });
+
 const ContextMenu = () => {
+    const [current_menu, set_current_menu] = useState<(MenuOption | string)[]>(
+        [],
+    );
+
+    const menu: MenuOption[] = useMemo(() => {
+        return [
+            {
+                name: menu_option_names.CUT,
+                label: "Cut",
+                func: () => {},
+            },
+            {
+                name: menu_option_names.COPY,
+                label: "Copy",
+                func: () => {},
+            },
+
+            {
+                name: menu_option_names.DELETE,
+                label: "Delete",
+                func: () => {},
+            },
+
+            { name: menu_option_names.NEW, label: "New", func: () => {} },
+
+            {
+                name: menu_option_names.OPEN_FOLDER,
+                label: "Open",
+                func: () => {},
+            },
+            {
+                name: menu_option_names.OPEN_FILE,
+                label: "Open",
+                func: () => {},
+            },
+            {
+                name: menu_option_names.OPEN_IN_NEW_WINDOW,
+                label: "Open in new window",
+                func: () => {},
+            },
+
+            { name: menu_option_names.PIN, label: "Pin", func: () => {} },
+            { name: menu_option_names.PASTE, label: "Paste", func: () => {} },
+            {
+                name: menu_option_names.PROPERTIES,
+                label: "Properties",
+                func: () => {},
+            },
+
+            {
+                name: menu_option_names.REFRESH,
+                label: "Refresh",
+                func: () => {},
+            },
+            { name: menu_option_names.RENAME, label: "Rename", func: () => {} },
+        ];
+    }, []);
+
     useEffect(() => {
+        //  alert("Run!!!");
         const window_ipc_com: any = (e: CustomEvent) => {
             let data = e.detail.data;
-            console.log(e.detail, "from context_menu.tsx");
-
+            console.log(data, "data");
+            //  alert("ran");
             switch (data.type) {
+                case "menu":
+                    console.log(data, "menu");
+                    const options = menu_options[data.value];
+                    if (options?.length) {
+                        set_current_menu(
+                            options
+                                .map((op) => {
+                                    if (op === LINE) {
+                                        return "";
+                                    }
+                                    return menu.find((o) => op === o.name);
+                                })
+                                .filter((v) => v !== undefined),
+                        );
+                    }
+                    break;
                 case "visibility":
                     window_commands.set_visibility(data.value);
                     if (data.value === false)
@@ -23,11 +171,10 @@ const ContextMenu = () => {
                     }
                     break;
                 case "position":
-                    // window_commands.send_msg_to_window_by_selector("main", {
-                    //     type: "is_blur",
-                    //     value: true,
-                    // });
                     window_commands.set_position(data.value);
+                    break;
+                case "close":
+                    window_commands.close_window();
                     break;
                 case "is_parent_blur":
                     // if (data.value === false && !document.hasFocus()) {
@@ -37,27 +184,17 @@ const ContextMenu = () => {
             }
         };
         const window_blur: any = async () => {
-            //await Promise.all([
             await window_commands.set_visibility(false); //.then(() => {});
             await window_commands.send_msg_to_window_by_selector("main", {
                 type: "is_blur",
                 value: true,
             });
-            //]);
         };
 
         const tao_window_event_handler: any = async (e: CustomEvent) => {
             console.log(e.detail, "tao event");
             switch (e.detail.type) {
                 case "focused":
-                    // if (e.detail.value === false) {
-                    //     window_commands.send_msg_to_window_by_selector("main", {
-                    //         type: "is_blur",
-                    //         value: true,
-                    //     });
-                    //     window_commands.set_visibility(false);
-                    // } else {
-                    // }
                     break;
             }
         };
@@ -72,7 +209,7 @@ const ContextMenu = () => {
         const resize_observer = new ResizeObserver((entries) => {
             for (let entry of entries) {
                 if (entry.target === document.querySelector(".menu")) {
-                    const new_height = entry.contentRect.height;
+                    const new_height = entry.contentRect.height + 10;
                     window_commands.set_size({
                         width: 250,
                         height: new_height + 16,
@@ -91,6 +228,13 @@ const ContextMenu = () => {
             window.removeEventListener("blur", window_blur);
             resize_observer.disconnect();
         };
+    }, [current_menu]);
+
+    useEffect(() => {
+        window_commands.send_msg_to_window_by_selector("main", {
+            type: "is_loaded",
+            value: true,
+        });
     }, []);
 
     return (
@@ -99,16 +243,25 @@ const ContextMenu = () => {
             className="w-screen h-screen p-2 bg-transparent select-none"
         >
             <div className="w-full h-full bg-primary rounded-md shadow-2xl border border-gray-400/10 overflow-hidden">
-                <div className="flex flex-col menu">
-                    {["Open", "Delete", "Rename", "Properties"].map(
-                        (item, index) => (
-                            <div
-                                className="p-2 border-b border-gray-400/10 cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs"
-                                key={index}
-                            >
-                                {item}
-                            </div>
-                        ),
+                <div className="flex flex-col menu py-1">
+                    {current_menu.length ? (
+                        current_menu.map((item, i) =>
+                            typeof item === "string" ? (
+                                <div key={i} className="p-1">
+                                    <hr className="bg-gray-400/10 h-px border-0" />
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={item.func}
+                                    className="py-1.5 px-2  cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs"
+                                    key={i}
+                                >
+                                    {item.label}
+                                </div>
+                            ),
+                        )
+                    ) : (
+                        <p className="text-center">No options</p>
                     )}
                 </div>
             </div>

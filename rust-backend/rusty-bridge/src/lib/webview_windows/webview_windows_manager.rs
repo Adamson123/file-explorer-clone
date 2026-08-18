@@ -41,12 +41,11 @@ pub struct WebViewWindowConfig {
     pub selector: String,
     pub position: Option<WebviewWindowPosition>,
     pub size: Option<WebviewWindowSize>,
-    // pub width: f64,
-    // pub height: f64,
     pub decoration: bool,
     pub transparent: bool,
     pub shadow: bool,
     pub resizable: bool,
+    pub visibility: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -60,14 +59,13 @@ pub struct WindowConfig {
     pub transparent: bool,
     pub shadow: bool,
     pub resizable: bool,
+    pub visibility: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct WebViewConfig {
     pub url: String,
     pub transparent: bool,
-    // pub width: f64,
-    // pub height: f64,
 }
 
 impl WebViewWindowConfig {
@@ -82,6 +80,7 @@ impl WebViewWindowConfig {
             resizable: self.resizable,
             parent_window_key: self.parent_window_key.clone(),
             position: self.position.clone(),
+            visibility: self.visibility,
         }
     }
 
@@ -117,13 +116,6 @@ impl WebViewWindowManager {
         &mut self,
         webview_window_setup: &WebViewWindowSetup,
     ) -> Result<String, String> {
-        // println!(
-        //     "Adding webview window with selector: {} and name: {}, obj: {:#?} ✅",
-        //     webview_window_setup.window_config.selector,
-        //     webview_window_setup.window_config.window_name,
-        //     webview_window_setup.window_config
-        // );
-
         let window_key: String = Uuid::new_v4().to_string();
         let window_config: WindowConfig = webview_window_setup.window_config.window_config();
 

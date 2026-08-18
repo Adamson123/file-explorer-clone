@@ -23,6 +23,7 @@ const webview_window_config = {
     transparent: false,
     shadow: true,
     resizable: true,
+    visibility: true,
 
     size: null as null | {
         width: number;

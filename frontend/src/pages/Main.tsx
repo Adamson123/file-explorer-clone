@@ -29,121 +29,11 @@ const Main = () => {
     const [active_history_index, set_active_history_index] = useState(0);
     const [dir_contents, set_dir_contents] = useState<DirContents[]>([]);
     const [is_dir_updated, set_is_dir_updated] = useState(false);
+    const [is_maximized, set_is_maximized] = useState(false);
+
     const is_context_menu_created_ref = useRef(false);
     const last_context_element_ref = useRef<HTMLElement>(null);
-    const is_new_context_content_ref = useRef(false);
-    //const is_context_menu_open_ref = useRef(false);
-
-    useEffect(() => {
-        set_current_path_data(nav_history[active_history_index]);
-        set_active_shortcut(nav_history[active_history_index].shortcut);
-    }, [active_history_index]);
-
-    const get_dir_contents_cmd = async (path: string) => {
-        try {
-            set_is_dir_updated(false);
-            const res = await invoke_command("get_dir_contents", {
-                path,
-            });
-
-            set_is_dir_updated(true);
-            //   console.log("Contents: ", res);
-            if (res) set_dir_contents(res);
-            else set_dir_contents([]);
-        } catch (error) {
-            set_is_dir_updated(true);
-            console.log("Error reading dir:", { error });
-            throw error;
-        }
-    };
-
-    const hide_menu = async () => {
-        return await window_commands.send_msg_to_window_by_selector(
-            "context_menu",
-            {
-                type: "visibility",
-                value: false,
-            },
-        );
-        // .then(() => {
-        //     is_context_menu_open_ref.current = false;
-        // });
-    };
-
-    useEffect(() => {
-        //For initial load, we can get the contents of the current path
-        get_dir_contents_cmd(current_path_data.path);
-
-        const tao_window_event_handler: any = async (e: CustomEvent) => {
-            switch (e.detail.type) {
-                case "focused":
-                    if (e.detail.value === false) {
-                        // console.log(
-                        //     "Should hide , ",
-                        //     is_context_menu_open_ref.current,
-                        //     e.detail.value,
-                        // );
-                        // if (is_context_menu_open_ref.current) await hide_menu();
-                        await window_commands.send_msg_to_window_by_selector(
-                            "context_menu",
-                            {
-                                type: "is_parent_blur",
-                                value: false,
-                            },
-                        );
-                        //    is_context_menu_open_ref.current = false;
-                    } else {
-                        await window_commands.send_msg_to_window_by_selector(
-                            "context_menu",
-                            {
-                                type: "is_parent_blur",
-                                value: true,
-                            },
-                        );
-                    }
-                    break;
-            }
-        };
-
-        const window_ipc_com: any = (e: CustomEvent) => {
-            let data = e.detail.data;
-            console.log(e.detail);
-            switch (data.type) {
-                case "is_blur":
-                    if (data.value === true) {
-                        if (
-                            last_context_element_ref.current //&&
-                            // !is_new_context_content_ref.current
-                        ) {
-                            last_context_element_ref.current.classList.remove(
-                                "bg-gray-400/10",
-                            );
-                            console.log(
-                                "context content cleared -> blur",
-                                last_context_element_ref.current,
-                            );
-                            last_context_element_ref.current = null;
-                        } else {
-                            console.log("Content context is protected");
-                        }
-                    }
-
-                    is_new_context_content_ref.current = false;
-                    break;
-            }
-        };
-
-        document.addEventListener("window_event", tao_window_event_handler);
-        document.addEventListener("window_ipc_com", window_ipc_com);
-
-        return () => {
-            document.removeEventListener(
-                "window_event",
-                tao_window_event_handler,
-            );
-            document.removeEventListener("window_ipc_com", window_ipc_com);
-        };
-    }, []);
+    //   const is_new_context_content_ref = useRef(false);
 
     const update_nav_history = async (
         path: string,
@@ -209,101 +99,270 @@ const Main = () => {
         } catch (error) {}
     };
 
-    const get_menu_position = (
-        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    ) => {
+    const clear_context_content = () => {
         if (last_context_element_ref.current) {
             last_context_element_ref.current.classList.remove("bg-gray-400/10");
             last_context_element_ref.current = null;
-            console.log("context content cleared -> 1");
         }
+    };
+
+    const get_context_data = (
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    ) => {
+        clear_context_content();
 
         const dir_content = (e.target as any).closest(
             ".dir_content",
         ) as HTMLDivElement | null;
 
+        const extra = 0;
+        const menu_width = 250;
+        const max_x = screen.width + extra;
+        //const max_y = window.innerHeight + 20;
+
+        const cap_x = (x: number) => {
+            const menu_right = e.screenX + menu_width;
+            return menu_right > max_x ? x - (menu_right - max_x) : x;
+        };
+
+        const position = {
+            clientX: cap_x(Math.min(e.clientX, window.innerWidth - 10)),
+            clientY: e.clientY,
+            dir_content: null,
+        };
+
         if (!dir_content) {
-            return { clientX: e.clientX, clientY: e.clientY };
+            return position;
         }
-        const bounding_rect = dir_content.getBoundingClientRect();
-        const r = 0.45;
-        const new_x = bounding_rect.x + (bounding_rect.width * r) / 2;
-        const new_y = bounding_rect.y + (bounding_rect.height * r) / 2;
+
+        // const bounding_rect = dir_content.getBoundingClientRect();
+        // const r = 0.45;
+        // const new_x = bounding_rect.x + (bounding_rect.width * r) / 2;
+        // const new_y = bounding_rect.y + (bounding_rect.height * r) / 2;
 
         last_context_element_ref.current = dir_content;
         last_context_element_ref.current.classList.add("bg-gray-400/10");
-        is_new_context_content_ref.current = true;
-        console.log("context content created");
 
-        return { clientX: new_x, clientY: new_y };
+        return { ...position, dir_content };
     };
 
+    const update_menu = async (
+        dir_content: HTMLElement | null = last_context_element_ref.current,
+    ) => {
+        if (!dir_content) {
+            await window_commands.send_msg_to_window_by_selector(
+                "context_menu",
+                {
+                    type: "menu",
+                    value: "current_dir_menu_options",
+                },
+            );
+        } else {
+            //Handle others
+            const is_dir = dir_content.getAttribute("data-is-dir") === "true";
+            if (is_dir) {
+                await window_commands.send_msg_to_window_by_selector(
+                    "context_menu",
+                    {
+                        type: "menu",
+                        value: "dir_menu_options",
+                    },
+                );
+            } else {
+                await window_commands.send_msg_to_window_by_selector(
+                    "context_menu",
+                    {
+                        type: "menu",
+                        value: "file_menu_options",
+                    },
+                );
+            }
+        }
+    };
+
+    const set_menu_visibility = async (visibility: boolean) => {
+        return await window_commands.send_msg_to_window_by_selector(
+            "context_menu",
+            {
+                type: "visibility",
+                value: visibility,
+            },
+        );
+    };
+
+    const update_menu_position = async (clientX: number, clientY: number) => {
+        await window_commands.send_msg_to_window_by_selector("context_menu", {
+            type: "position",
+            value: {
+                x: clientX,
+                y: clientY,
+            },
+        });
+    };
+
+    const get_dir_contents_cmd = async (path: string) => {
+        try {
+            set_is_dir_updated(false);
+            const res = await invoke_command("get_dir_contents", {
+                path,
+            });
+
+            set_is_dir_updated(true);
+
+            if (res) set_dir_contents(res);
+            else set_dir_contents([]);
+        } catch (error) {
+            set_is_dir_updated(true);
+            console.log("Error reading dir:", { error });
+            throw error;
+        }
+    };
+
+    useEffect(() => {
+        set_current_path_data(nav_history[active_history_index]);
+        set_active_shortcut(nav_history[active_history_index].shortcut);
+    }, [active_history_index]);
+
+    useEffect(() => {
+        //For initial load, we can get the contents of the current path
+        get_dir_contents_cmd(current_path_data.path);
+
+        const tao_window_event: any = async (e: CustomEvent) => {
+            switch (e.detail.type) {
+                case "focused":
+                    if (e.detail.value === false) {
+                        await window_commands.send_msg_to_window_by_selector(
+                            "context_menu",
+                            {
+                                type: "is_parent_blur",
+                                value: false,
+                            },
+                        );
+                    } else {
+                        await window_commands.send_msg_to_window_by_selector(
+                            "context_menu",
+                            {
+                                type: "is_parent_blur",
+                                value: true,
+                            },
+                        );
+                    }
+                    break;
+            }
+        };
+
+        const window_ipc_com: any = async (e: CustomEvent) => {
+            let data = e.detail.data;
+
+            switch (data.type) {
+                case "is_blur":
+                    if (data.value === true) {
+                        clear_context_content();
+                    }
+                    break;
+                // case "is_loaded":
+                //     await update_menu()
+                //     await  set_menu_visibility(true);
+                //     await update_menu_position();
+
+                //     break;
+            }
+        };
+
+        //Send kill request to menu
+        const on_load = async () => {
+            await window_commands.send_msg_to_window_by_selector(
+                "context_menu",
+                {
+                    type: "close",
+                    value: true,
+                },
+            );
+        };
+
+        document.addEventListener("window_event", tao_window_event);
+        document.addEventListener("window_ipc_com", window_ipc_com);
+        window.addEventListener("load", on_load);
+
+        return () => {
+            document.removeEventListener("window_event", tao_window_event);
+            document.removeEventListener("window_ipc_com", window_ipc_com);
+            window.removeEventListener("load", on_load);
+        };
+    }, []);
+
     return (
-        <main
-            // onMouseDown={() =>
-            //     last_context_element_ref.current?.classList.remove(
-            //         "bg-gray-400/10",
-            //     )
-            // }
-            className="w-screen h-screen"
-        >
-            <div className="flex flex-col size-full rounded-xl overflow-hidden shadow-2xl">
+        <main className="w-screen h-screen">
+            <div
+                className={`flex flex-col size-full overflow-hidden shadow-2xl ${!is_maximized && "rounded-xl"}`}
+            >
                 <TitleBar
                     active_history_index={active_history_index}
                     set_active_history_index={set_active_history_index}
                     nav_history={nav_history}
                     get_dir_contents_cmd={get_dir_contents_cmd}
+                    set_is_maximized={set_is_maximized}
+                    is_maximized={is_maximized}
                 />
                 <div
                     onContextMenu={async (e) => {
                         e.preventDefault();
-                        // console.log(e.target.closest(".dir_content"));
-                        const { clientX, clientY } = get_menu_position(e);
-                        if (!is_context_menu_created_ref.current) {
-                            const res = await window_commands.create_window({
-                                url: "http://localhost:5173/context-menu",
-                                window_name: "Context Menu",
-                                decoration: false,
-                                resizable: false,
-                                parent_window_key:
-                                    localStorage.getItem("window_key") || "",
-                                size: {
-                                    height: 300,
-                                    width: 250,
-                                },
-                                position: {
-                                    x: clientX,
-                                    y: clientY,
-                                },
-                                selector: "context_menu",
-                                shadow: false,
-                                transparent: true,
-                            });
-                            is_context_menu_created_ref.current = true;
-                            //      is_context_menu_open_ref.current = true;
-                        } else {
-                            const res =
-                                await window_commands.send_msg_to_window_by_selector(
-                                    "context_menu",
-                                    {
-                                        type: "visibility",
-                                        value: true,
-                                    },
-                                );
 
-                            const res2 =
-                                await window_commands.send_msg_to_window_by_selector(
-                                    "context_menu",
-                                    {
-                                        type: "position",
-                                        value: {
-                                            x: clientX,
-                                            y: clientY,
-                                        },
-                                    },
-                                );
+                        try {
+                            const { clientX, clientY } = get_context_data(e);
 
-                            //   is_context_menu_open_ref.current = true;
+                            if (!is_context_menu_created_ref.current) {
+                                await window_commands.create_window({
+                                    url: "http://localhost:5173/context-menu",
+                                    window_name: "Context Menu",
+                                    decoration: false,
+                                    resizable: false,
+                                    parent_window_key:
+                                        localStorage.getItem("window_key") ||
+                                        "",
+                                    size: {
+                                        height: 300,
+                                        width: 250,
+                                    },
+                                    position: {
+                                        x: clientX,
+                                        y: clientY,
+                                    },
+                                    selector: "context_menu",
+                                    shadow: false,
+                                    transparent: true,
+                                    visibility: false,
+                                });
+                                is_context_menu_created_ref.current = true;
+                                const menu_onload: any = async (
+                                    e: CustomEvent,
+                                ) => {
+                                    // let data = e.detail.data;
+                                    if ((e.detail.data.type = "is_loaded")) {
+                                        await update_menu();
+                                        await update_menu_position(
+                                            clientX,
+                                            clientY,
+                                        );
+                                        await set_menu_visibility(true);
+                                        document.removeEventListener(
+                                            "window_ipc_com",
+                                            menu_onload,
+                                        );
+                                    }
+                                };
+                                document.addEventListener(
+                                    "window_ipc_com",
+                                    menu_onload,
+                                );
+                            } else {
+                                await update_menu();
+                                set_menu_visibility(true);
+
+                                await update_menu_position(clientX, clientY);
+                            }
+                        } catch (error) {
+                            console.log("Error creating context menu:", error);
                         }
                     }}
                     className="w-full h-full flex"
