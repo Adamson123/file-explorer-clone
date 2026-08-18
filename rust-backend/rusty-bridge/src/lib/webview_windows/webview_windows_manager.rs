@@ -217,28 +217,6 @@ impl WebViewWindowManager {
         }
     }
 
-    pub fn attach_as_window_to_parent(
-        &self,
-        window_config: &WindowConfig,
-        window: &Window,
-        parent: &WebViewWindow,
-    ) {
-        let parent_hwnd = parent.window.hwnd();
-        let child_hwnd = window.hwnd();
-
-        println!(
-            "Attaching window {} to parent {}",
-            window_config.window_name, window_config.parent_window_key
-        );
-
-        self.set_parent(child_hwnd, parent_hwnd);
-
-        //Make child position relative to parent if a position is provided
-        if let Some(pos) = &window_config.position {
-            self.set_position_relative_to_parent(pos, window, parent, &WindowKind::App);
-        }
-    }
-
     pub fn apply_tool_window_style(&self, window: &Window) {
         unsafe {
             let hwnd = HWND(window.hwnd() as *mut c_void);
@@ -267,68 +245,6 @@ impl WebViewWindowManager {
         }
         self.apply_tool_window_style(window);
     }
-
-    // pub fn apply_popup_window_style(&self, window: &Window) {
-    //     unsafe {
-    //         let hwnd = HWND(window.hwnd() as *mut c_void);
-
-    //         // Keep the popup as a plain client area. Extending a DWM frame into a
-    //         // transparent window can leave compositor-drawn pixels around its edge.
-    //         let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
-    //         let clear_mask = WS_OVERLAPPED.0 as isize
-    //             | WS_CAPTION.0 as isize
-    //             | WS_SYSMENU.0 as isize
-    //             | WS_THICKFRAME.0 as isize
-    //             | WS_MINIMIZEBOX.0 as isize
-    //             | WS_MAXIMIZEBOX.0 as isize
-    //             | WS_BORDER.0 as isize;
-    //         let new_style = (style & !clear_mask) | WS_POPUP.0 as isize;
-    //         SetWindowLongPtrW(hwnd, GWL_STYLE, new_style);
-
-    //         // Remove every extended edge too; these can still render a thin colored
-    //         // non-client rim even when the normal caption and border are gone.
-    //         let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    //         let clear_ex_style = WS_EX_APPWINDOW.0 as isize
-    //             | WS_EX_CLIENTEDGE.0 as isize
-    //             | WS_EX_DLGMODALFRAME.0 as isize
-    //             | WS_EX_STATICEDGE.0 as isize
-    //             | WS_EX_WINDOWEDGE.0 as isize;
-    //         SetWindowLongPtrW(
-    //             hwnd,
-    //             GWL_EXSTYLE,
-    //             (ex_style & !clear_ex_style) | WS_EX_TOOLWINDOW.0 as isize,
-    //         );
-
-    //         // Disable Windows 11's non-client renderer for this popup. Without this,
-    //         // DWM can draw its own corner pixels even when WS_POPUP has no border.
-    //         let non_client_rendering = DWMNCRP_DISABLED;
-    //         let _ = DwmSetWindowAttribute(
-    //             hwnd,
-    //             DWMWA_NCRENDERING_POLICY,
-    //             &non_client_rendering as *const _ as *const _,
-    //             std::mem::size_of_val(&non_client_rendering) as u32,
-    //         );
-    //         let corner_preference = DWMWCP_DONOTROUND;
-    //         let _ = DwmSetWindowAttribute(
-    //             hwnd,
-    //             DWMWA_WINDOW_CORNER_PREFERENCE,
-    //             &corner_preference as *const _ as *const _,
-    //             std::mem::size_of_val(&corner_preference) as u32,
-    //         );
-
-    //         // Apply the new non-client style immediately.
-    //         let _ = SetWindowPos(
-    //             hwnd,
-    //             None,
-    //             0,
-    //             0,
-    //             0,
-    //             0,
-    //             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED,
-    //         );
-
-    //     }
-    // }
 
     pub fn attach_as_tool_to_parent(
         &self,
@@ -371,6 +287,28 @@ impl WebViewWindowManager {
 
         if let Some(pos) = &window_config.position {
             self.set_position_relative_to_parent(pos, window, parent, &WindowKind::Popup);
+        }
+    }
+
+    pub fn attach_as_window_to_parent(
+        &self,
+        window_config: &WindowConfig,
+        window: &Window,
+        parent: &WebViewWindow,
+    ) {
+        let parent_hwnd = parent.window.hwnd();
+        let child_hwnd = window.hwnd();
+
+        println!(
+            "Attaching window {} to parent {}",
+            window_config.window_name, window_config.parent_window_key
+        );
+
+        self.set_parent(child_hwnd, parent_hwnd);
+
+        //Make child position relative to parent if a position is provided
+        if let Some(pos) = &window_config.position {
+            self.set_position_relative_to_parent(pos, window, parent, &WindowKind::App);
         }
     }
 

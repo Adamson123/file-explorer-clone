@@ -170,6 +170,11 @@ const ContextMenu = () => {
                         });
                     }
                     break;
+                case "selection":
+                    {
+                        // use selected element data (should contain position data)
+                    }
+                    break;
                 case "position":
                     window_commands.set_position(data.value);
                     break;
@@ -209,7 +214,8 @@ const ContextMenu = () => {
         const resize_observer = new ResizeObserver((entries) => {
             for (let entry of entries) {
                 if (entry.target === document.querySelector(".menu")) {
-                    const new_height = entry.contentRect.height + 10;
+                    const new_height = entry.target.clientHeight + 2;
+
                     window_commands.set_size({
                         width: 250,
                         height: new_height,
@@ -240,30 +246,29 @@ const ContextMenu = () => {
     return (
         <main
             onContextMenu={(e) => e.preventDefault()}
-            className="w-screen h-screen bg-transparent select-none"
+            className="w-screen h-screen bg-transparent select-none overflow-hidden"
         >
-            <div className="w-full h-full bg-primary rounded-md shadow-2xl border border-gray-400/10 overflow-hidden">
-                <div className="flex flex-col menu py-1">
-                    {current_menu.length ? (
-                        current_menu.map((item, i) =>
-                            typeof item === "string" ? (
-                                <div key={i} className="p-1">
-                                    <hr className="bg-gray-400/10 h-px border-0" />
-                                </div>
-                            ) : (
-                                <div
-                                    onClick={item.func}
-                                    className="py-1.5 px-2  cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs"
-                                    key={i}
-                                >
-                                    {item.label}
-                                </div>
-                            ),
-                        )
-                    ) : (
-                        <p className="text-center">No options</p>
-                    )}
-                </div>
+            {/* <div className="w-full h-full bg-transparent overflow-hidden"> */}
+            <div className="flex flex-col menu py-1 bg-primary rounded-md shadow-xl border border-gray-400/10">
+                {current_menu.length ? (
+                    current_menu.map((item, i) =>
+                        typeof item === "string" ? (
+                            <div key={i} className="p-1">
+                                <hr className="bg-gray-400/10 h-px border-0" />
+                            </div>
+                        ) : (
+                            <div
+                                onClick={item.func}
+                                className="py-1.5 px-2  cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs"
+                                key={i}
+                            >
+                                {item.label}
+                            </div>
+                        ),
+                    )
+                ) : (
+                    <p className="text-center">No options</p>
+                )}
             </div>
         </main>
     );
