@@ -4,6 +4,7 @@ import RightSection from "../components/RightSection";
 import TitleBar from "../components/TitleBar";
 import invoke_command from "../lib/invoke_command";
 import window_commands from "../lib/window_commands";
+import type { SelectionData } from "./ContextMenu";
 
 export type PathData = {
     shortcut: string;
@@ -106,46 +107,57 @@ const Main = () => {
         }
     };
 
-    const get_context_data = (
+    const get_selection_data = (
         e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    ) => {
+    ): SelectionData => {
         clear_context_content();
 
-        const dir_content = (e.target as any).closest(
+        const dir_element = (e.target as any).closest(
             ".dir_content",
         ) as HTMLDivElement | null;
 
-        const extra = 0;
-        const menu_width = 250;
-        const max_x = screen.width + extra;
-        //const max_y = window.innerHeight + 20;
+        // //..
+        // const extra = 0;
+        // const menu_width = 250;
+        // const max_x = screen.width + extra;
+        // //const max_y = window.innerHeight + 20;
 
-        const cap_x = (x: number) => {
-            const menu_right = e.screenX + menu_width;
-            return menu_right > max_x ? x - (menu_right - max_x) : x;
-        };
+        // const cap_x = (x: number) => {
+        //     const menu_right = e.screenX + menu_width;
+        //     return menu_right > max_x ? x - (menu_right - max_x) : x;
+        // };
 
-        const position = {
-            clientX: cap_x(Math.min(e.clientX, window.innerWidth - 10)),
-            clientY: e.clientY,
+        // const position = {
+        //     clientX: cap_x(Math.min(e.clientX, window.innerWidth - 10)),
+        //     clientY: e.clientY,
+        // };
+
+        //..
+
+        const position: SelectionData = {
+            client_x: e.clientX,
+            client_y: e.clientY,
+            inner_width: window.innerWidth,
+            inner_height: window.innerHeight,
+            screen_x: e.screenX,
+            screen_y: e.screenY,
             dir_content: null,
         };
 
-        console.log(position);
-
-        if (!dir_content) {
+        if (!dir_element) {
             return position;
         }
 
-        // const bounding_rect = dir_content.getBoundingClientRect();
+        // const bounding_rect = dir_element.getBoundingClientRect();
         // const r = 0.45;
         // const new_x = bounding_rect.x + (bounding_rect.width * r) / 2;
         // const new_y = bounding_rect.y + (bounding_rect.height * r) / 2;
 
-        last_context_element_ref.current = dir_content;
+        last_context_element_ref.current = dir_element;
         last_context_element_ref.current.classList.add("bg-gray-400/10");
 
-        return { ...position, dir_content };
+        //TODO: Get dir content and add
+        return position;
     };
 
     const update_menu = async (
@@ -199,6 +211,13 @@ const Main = () => {
                 x: clientX,
                 y: clientY,
             },
+        });
+    };
+
+    const send_selection_data = async (selection_data: SelectionData) => {
+        await window_commands.send_msg_to_window_by_selector("context_menu", {
+            type: "selection",
+            value: selection_data,
         });
     };
 
@@ -282,12 +301,12 @@ const Main = () => {
             );
         };
 
-        document.addEventListener("window_event", tao_window_event);
+        document.addEventListener("tao_window_event", tao_window_event);
         document.addEventListener("window_ipc_com", window_ipc_com);
         window.addEventListener("load", on_load);
 
         return () => {
-            document.removeEventListener("window_event", tao_window_event);
+            document.removeEventListener("tao_window_event", tao_window_event);
             document.removeEventListener("window_ipc_com", window_ipc_com);
             window.removeEventListener("load", on_load);
         };
@@ -311,7 +330,7 @@ const Main = () => {
                         e.preventDefault();
 
                         try {
-                            const { clientX, clientY } = get_context_data(e);
+                            const selection_data = get_selection_data(e);
 
                             if (!is_context_menu_created_ref.current) {
                                 await window_commands.create_window({
@@ -326,10 +345,10 @@ const Main = () => {
                                         height: 300,
                                         width: 250,
                                     },
-                                    position: {
-                                        x: clientX,
-                                        y: clientY,
-                                    },
+                                    // position: {
+                                    //     x: selection_data.screen_x,
+                                    //     y: selection_data.screen_y,
+                                    // },
                                     selector: "context_menu",
                                     shadow: false,
                                     transparent: true,
@@ -343,9 +362,12 @@ const Main = () => {
                                     // let data = e.detail.data;
                                     if ((e.detail.data.type = "is_loaded")) {
                                         await update_menu();
-                                        await update_menu_position(
-                                            clientX,
-                                            clientY,
+                                        // await update_menu_position(
+                                        //     selection_data.client_x,
+                                        //     selection_data.client_y,
+                                        // );
+                                        await send_selection_data(
+                                            selection_data,
                                         );
                                         await set_menu_visibility(true);
                                         document.removeEventListener(
@@ -360,7 +382,11 @@ const Main = () => {
                                 );
                             } else {
                                 await update_menu();
-                                await update_menu_position(clientX, clientY);
+                                // await update_menu_position(
+                                //     selection_data.client_x,
+                                //     selection_data.client_y,
+                                // );
+                                await send_selection_data(selection_data);
                                 set_menu_visibility(true);
                             }
                         } catch (error) {

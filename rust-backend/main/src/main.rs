@@ -54,7 +54,7 @@ async fn main() {
 
                     if let Some(ww) = webview_window {
                         let js_event = construct_js_event(
-                            "window_event",
+                            "tao_window_event",
                             &json!({ "type":"focused", "value": b }),
                         );
                         //   println!("Sent event value: {} to: {}", ww.selector, b);
