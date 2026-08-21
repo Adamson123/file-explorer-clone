@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import MenuPopUp, {
+    type MenuOption,
+    type SelectionData,
+} from "../components/MenuPopUp";
 import window_commands from "../lib/window_commands";
-import type { DirContents } from "./Main";
-import { ChevronRight } from "lucide-react";
+import { Outlet } from "react-router-dom";
 
 const menu_option_names = {
     COPY: "copy",
@@ -62,27 +65,94 @@ const menu_options: { [key: string]: string[] } = {
     file_menu_options,
 };
 
-type MenuOption = {
-    name: string;
-    label: string;
-    type?: string;
-    func: () => void;
-};
-
-export type SelectionData = {
-    dir_content: DirContents | null;
-    client_x: number;
-    client_y: number;
-    screen_x: number;
-    screen_y: number;
-    inner_width: number;
-    inner_height: number;
-};
-
 const ContextMenu = () => {
+    if (location.href === "http://localhost:5173/context-menu/submenu") {
+        return <Outlet />;
+    }
+
     const [current_menu, set_current_menu] = useState<(MenuOption | string)[]>(
         [],
     );
+    // const [selection_data, set_selection_data] = useState<SelectionData | null>(
+    //     null,
+    // );
+    const selection_data_ref = useRef<SelectionData | null>(null);
+    // const [do_not_hide_on_blur, set_do_not_hide_on_blur] = useState(false);
+    const do_not_hide_on_blur_ref = useRef(false);
+    const is_menu_created_ref = useRef(false);
+
+    const get_selection_data = (
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    ): SelectionData | null => {
+        const element = e.currentTarget;
+        const rect = element.getBoundingClientRect();
+
+        if (selection_data_ref.current) {
+            const position: SelectionData = {
+                ...selection_data_ref.current,
+
+                client_x: rect.x + (rect.width - 10),
+                client_y: rect.y,
+
+                // client_x: 0,
+                // client_y: 0,
+                // inner_height: 0,
+                // inner_width: 0,
+                // screen_x: 0,
+                // screen_y: 0,
+
+                // client_x: window.screenX + rect.x + rect.width,
+                // client_y: window.screenY + rect.y,
+            };
+
+            return position;
+        }
+        return null;
+    };
+
+    const update_menu = async () => {
+        await window_commands.send_msg_to_window_by_selector("submenu", {
+            type: "menu",
+            value: "new_content_options",
+        });
+    };
+
+    const set_menu_visibility = async (visibility: boolean) => {
+        return await window_commands.send_msg_to_window_by_selector("submenu", {
+            type: "visibility",
+            value: visibility,
+        });
+    };
+
+    const send_selection_data = async (selection_data: SelectionData) => {
+        await window_commands.send_msg_to_window_by_selector("submenu", {
+            type: "selection",
+            value: selection_data,
+        });
+    };
+
+    const create_submenu = async () => {
+        do_not_hide_on_blur_ref.current = true;
+        if (!is_menu_created_ref.current) {
+            await window_commands.create_window({
+                url: "http://localhost:5173/context-menu/submenu",
+                window_name: "Context SubMenu",
+                decoration: false,
+                resizable: false,
+                parent_window_key: localStorage.getItem("window_key") || "",
+                size: {
+                    height: 300,
+                    width: 250,
+                },
+                selector: "submenu",
+                shadow: false,
+                transparent: true,
+                visibility: false,
+                kind: "Tool",
+            });
+            is_menu_created_ref.current = true;
+        }
+    };
 
     const menu: MenuOption[] = useMemo(() => {
         return [
@@ -107,7 +177,29 @@ const ContextMenu = () => {
                 name: menu_option_names.NEW,
                 label: "New",
                 type: "subfield",
-                func: () => {},
+                leave_func: async () => {
+                    await set_menu_visibility(false);
+                },
+                func: async (
+                    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+                ) => {
+                    try {
+                        console.log("FIRED!!!");
+
+                        const selection_data = get_selection_data(e);
+                        if (!selection_data) {
+                            console.log("No Selection Data!!!");
+                            return;
+                        }
+                        do_not_hide_on_blur_ref.current = true;
+
+                        await update_menu();
+                        await send_selection_data(selection_data);
+                        await set_menu_visibility(true);
+                    } catch (error) {
+                        console.log("Error creating context submenu: ", error);
+                    }
+                },
             },
 
             {
@@ -143,189 +235,99 @@ const ContextMenu = () => {
         ];
     }, []);
 
-    const handle_selection = async (selection_data: SelectionData) => {
-        if (!selection_data) return;
-
-        const cap_x = (x: number) => {
-            const max_x = screen.width;
-            const menu_width =
-                document.querySelector(".menu")?.clientWidth || 0; //250;
-
-            const menu_right = selection_data.screen_x + menu_width;
-            return menu_right > max_x ? x - (menu_right - max_x) : x;
-        };
-
-        const cap_y = (y: number) => {
-            const taskbar_height = 42;
-            const max_y = screen.height - taskbar_height;
-            const menu_height =
-                document.querySelector(".menu")?.clientHeight || 0;
-
-            const menu_bottom = selection_data.screen_y + menu_height;
-            return menu_bottom > max_y ? y - (menu_bottom - max_y) : y;
-        };
-
-        const extra = 10;
-        const position = {
-            x: cap_x(
-                Math.min(
-                    selection_data.client_x,
-                    selection_data.inner_width - extra,
-                ),
-            ),
-            y: cap_y(
-                Math.min(
-                    selection_data.client_y,
-                    selection_data.inner_height - extra,
-                ),
-            ),
-        };
-
-        await window_commands.set_position(position);
-    };
-
     useEffect(() => {
-        const window_ipc_com: any = (e: CustomEvent) => {
-            let data = e.detail.data;
-
-            switch (data.type) {
-                case "menu":
-                    console.log(data, "menu");
-                    const options = menu_options[data.value];
-                    if (options?.length) {
-                        set_current_menu(
-                            options
-                                .map((op) => {
-                                    if (op === LINE) {
-                                        return "";
-                                    }
-                                    return menu.find((o) => op === o.name);
-                                })
-                                .filter((v) => v !== undefined),
-                        );
-                    }
-                    break;
-                case "visibility":
-                    window_commands.set_visibility(data.value);
-                    if (data.value === false)
-                        window_commands.send_msg_to_window_by_selector("main", {
-                            type: "is_blur",
-                            value: true,
-                        });
-                    else {
-                        window_commands.send_msg_to_window_by_selector("main", {
-                            type: "is_blur",
-                            value: false,
-                        });
-                    }
-                    break;
-                case "selection":
-                    //TODO: use selected element data (should contain position data)
-                    handle_selection(data.value);
-                    break;
-                case "position":
-                    window_commands.set_position(data.value);
-                    break;
-                case "close":
-                    window_commands.close_window();
-                    break;
-                case "is_parent_blur":
-                    break;
-            }
-        };
-        const window_blur: any = async () => {
-            await window_commands.set_visibility(false); //.then(() => {});
-            await window_commands.send_msg_to_window_by_selector("main", {
-                type: "is_blur",
-                value: true,
+        const on_load = async () => {
+            if (is_menu_created_ref.current) return;
+            // window_commands
+            //     .send_msg_to_window_by_selector("submenu", {
+            //         type: "close",
+            //         value: true,
+            //     })
+            //     .then(() =>
+            create_submenu().then(() => {
+                console.log("Submenu created....");
             });
+            // )
+            // .catch((e) => {
+            //     console.log("Error closing submenu ", e);
+            // });
         };
 
-        const tao_window_event: any = async (e: CustomEvent) => {
-            console.log(e.detail, "tao event");
-            switch (e.detail.type) {
-                case "focused":
-                    break;
-            }
-        };
+        on_load();
+        // const on_focus = () => {
+        //     console.log("Focused");
+        // };
 
-        document.addEventListener("window_ipc_com", window_ipc_com);
-        document.addEventListener("window_event", tao_window_event);
-        window.addEventListener("blur", window_blur);
+        // window.addEventListener("load", on_load);
+        // window.addEventListener("focus", on_focus);
 
-        const menu_height = document.querySelector(".menu")?.clientHeight || 0;
-        const menu_width = document.querySelector(".menu")?.clientWidth || 0;
-        window_commands.set_size({
-            width: menu_width,
-            height: menu_height + 16,
-        });
-
-        const resize_observer = new ResizeObserver((entries) => {
-            for (let entry of entries) {
-                if (entry.target === document.querySelector(".menu")) {
-                    const new_height = entry.target.clientHeight + 2;
-
-                    window_commands.set_size({
-                        width: 250,
-                        height: new_height,
-                    });
-                }
-            }
-        });
-        resize_observer.observe(document.querySelector(".menu") as Element);
-
-        return () => {
-            document.removeEventListener("window_ipc_com", window_ipc_com);
-            document.removeEventListener("window_event", tao_window_event);
-            window.removeEventListener("blur", window_blur);
-            resize_observer.disconnect();
-        };
-    }, [current_menu]);
-
-    useEffect(() => {
-        window_commands.send_msg_to_window_by_selector("main", {
-            type: "is_loaded",
-            value: true,
-        });
+        // return () => {
+        //     window.removeEventListener("load", on_load);
+        //     window.removeEventListener("focus", on_focus);
+        // };
     }, []);
-
     return (
-        <main
-            onContextMenu={(e) => e.preventDefault()}
-            className="w-screen h-screen bg-transparent select-none overflow-hidden"
-        >
-            {/* <div className="w-full h-full bg-transparent overflow-hidden"> */}
-            <div className="flex flex-col menu py-1 bg-primary rounded-md shadow-xl border border-gray-400/10">
-                {current_menu.length ? (
-                    current_menu.map((item, i) =>
-                        typeof item === "string" ? (
-                            <div key={i} className="p-1">
-                                <hr className="bg-gray-400/10 h-px border-0" />
-                            </div>
-                        ) : item?.type ? (
-                            <div
-                                onMouseEnter={item.func}
-                                className="py-1 px-2  cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs flex justify-between items-center"
-                                key={i}
-                            >
-                                {item.label}{" "}
-                                <ChevronRight className="size-4.5 text-gray-400" />
-                            </div>
-                        ) : (
-                            <div
-                                onClick={item.func}
-                                className="py-1.5 px-2  cursor-pointer hover:bg-gray-400/10 transition-colors duration-100 text-xs"
-                                key={i}
-                            >
-                                {item.label}
-                            </div>
-                        ),
-                    )
-                ) : (
-                    <p className="text-center">No options</p>
-                )}
-            </div>
-        </main>
+        <MenuPopUp
+            //onContextMenu={(e) => e.preventDefault()}
+            //  do_not_hide_on_blur={do_not_hide_on_blur_ref.current}
+            do_not_hide_on_blur_ref={do_not_hide_on_blur_ref}
+            //  do_not_hide_on_blur
+            parent_selector="main"
+            menu_options={current_menu}
+            window_ipc_com={(e) => {
+                let data = e.detail.data;
+                switch (data.type) {
+                    case "menu":
+                        const options = menu_options[data.value];
+                        if (options?.length) {
+                            set_current_menu(
+                                options
+                                    .map((op) => {
+                                        if (op === LINE) {
+                                            return "";
+                                        }
+                                        return menu.find((o) => op === o.name);
+                                    })
+                                    .filter((v) => v !== undefined),
+                            );
+                        }
+                        break;
+                    case "selection":
+                        // set_selection_data(data.value);
+                        selection_data_ref.current = data.value;
+                        break;
+                }
+            }}
+            tao_window_event={(e) => {
+                switch (e.detail.type) {
+                    case "focused":
+                        // if (
+                        //     e.detail.value === false
+                        //     //&& !do_not_hide_on_blur_ref.current
+                        // ) {
+                        //     window_commands.set_visibility(false);
+                        // } else {
+                        //     //   window_commands.set_focus();
+                        // }
+                        // do_not_hide_on_blur_ref.current = false;
+
+                        //   console.log("Tao data", e.detail);
+                        // set_do_not_hide_on_blur(true);
+
+                        break;
+                }
+            }}
+            window_blur={async () => {
+                if (!do_not_hide_on_blur_ref.current)
+                    set_menu_visibility(false);
+                else {
+                    //Make blur listen again
+                    window_commands.set_focus();
+                    do_not_hide_on_blur_ref.current = false;
+                }
+                console.log("HIDE on blur!!!");
+            }}
+        />
     );
 };
 

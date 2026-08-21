@@ -255,17 +255,16 @@ impl WebViewWindowManager {
         let parent_hwnd = parent.window.hwnd();
         let child_hwnd = window.hwnd();
 
-        println!(
-            "Attaching tool {} to parent {}",
-            window_config.window_name, window_config.parent_window_key
-        );
-
         self.apply_tool_window_style(window);
         self.set_parent(child_hwnd, parent_hwnd);
 
         if let Some(pos) = &window_config.position {
             self.set_position_relative_to_parent(pos, window, parent, &WindowKind::Tool);
         }
+        println!(
+            "Attached tool {} to parent {} ✅",
+            window_config.window_name, window_config.parent_window_key
+        );
     }
 
     pub fn attach_as_popup_to_parent(
@@ -277,17 +276,17 @@ impl WebViewWindowManager {
         let parent_hwnd = parent.window.hwnd();
         let child_hwnd = window.hwnd();
 
-        println!(
-            "Attaching popup {} to parent {}",
-            window_config.window_name, window_config.parent_window_key
-        );
-
         self.apply_popup_window_style(window);
         self.set_parent(child_hwnd, parent_hwnd);
 
         if let Some(pos) = &window_config.position {
             self.set_position_relative_to_parent(pos, window, parent, &WindowKind::Popup);
         }
+
+        println!(
+            "Attached popup {} to parent {} ✅",
+            window_config.window_name, window_config.parent_window_key
+        );
     }
 
     pub fn attach_as_window_to_parent(
@@ -299,17 +298,16 @@ impl WebViewWindowManager {
         let parent_hwnd = parent.window.hwnd();
         let child_hwnd = window.hwnd();
 
-        println!(
-            "Attaching window {} to parent {}",
-            window_config.window_name, window_config.parent_window_key
-        );
-
         self.set_parent(child_hwnd, parent_hwnd);
 
         //Make child position relative to parent if a position is provided
         if let Some(pos) = &window_config.position {
             self.set_position_relative_to_parent(pos, window, parent, &WindowKind::App);
         }
+        println!(
+            "Attached window {} to parent {} ✅",
+            window_config.window_name, window_config.parent_window_key
+        );
     }
 
     pub fn set_position_relative_to_parent(

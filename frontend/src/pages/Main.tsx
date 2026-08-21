@@ -4,7 +4,7 @@ import RightSection from "../components/RightSection";
 import TitleBar from "../components/TitleBar";
 import invoke_command from "../lib/invoke_command";
 import window_commands from "../lib/window_commands";
-import type { SelectionData } from "./ContextMenu";
+import type { SelectionData } from "../components/MenuPopUp";
 
 export type PathData = {
     shortcut: string;
@@ -17,6 +17,20 @@ export type DirContents = {
     is_dir: boolean;
     path: string;
 };
+
+window.addEventListener("beforeunload", () => {
+    //  const on_load = async () => {
+    // if (is_context_menu_created_ref.current) return;
+    window_commands.send_msg_to_window_by_selector("context_menu", {
+        type: "close",
+        value: true,
+    });
+    window_commands.send_msg_to_window_by_selector("submenu", {
+        type: "close",
+        value: true,
+    });
+    //};
+});
 
 const Main = () => {
     const [current_path_data, set_current_path_data] = useState<PathData>({
@@ -116,24 +130,6 @@ const Main = () => {
             ".dir_content",
         ) as HTMLDivElement | null;
 
-        // //..
-        // const extra = 0;
-        // const menu_width = 250;
-        // const max_x = screen.width + extra;
-        // //const max_y = window.innerHeight + 20;
-
-        // const cap_x = (x: number) => {
-        //     const menu_right = e.screenX + menu_width;
-        //     return menu_right > max_x ? x - (menu_right - max_x) : x;
-        // };
-
-        // const position = {
-        //     clientX: cap_x(Math.min(e.clientX, window.innerWidth - 10)),
-        //     clientY: e.clientY,
-        // };
-
-        //..
-
         const position: SelectionData = {
             client_x: e.clientX,
             client_y: e.clientY,
@@ -147,11 +143,6 @@ const Main = () => {
         if (!dir_element) {
             return position;
         }
-
-        // const bounding_rect = dir_element.getBoundingClientRect();
-        // const r = 0.45;
-        // const new_x = bounding_rect.x + (bounding_rect.width * r) / 2;
-        // const new_y = bounding_rect.y + (bounding_rect.height * r) / 2;
 
         last_context_element_ref.current = dir_element;
         last_context_element_ref.current.classList.add("bg-gray-400/10");
@@ -291,24 +282,16 @@ const Main = () => {
         };
 
         //Send kill request to menu
-        const on_load = async () => {
-            await window_commands.send_msg_to_window_by_selector(
-                "context_menu",
-                {
-                    type: "close",
-                    value: true,
-                },
-            );
-        };
 
         document.addEventListener("tao_window_event", tao_window_event);
         document.addEventListener("window_ipc_com", window_ipc_com);
-        window.addEventListener("load", on_load);
+        //on_load();
+        // window.addEventListener("load", on_load);
 
         return () => {
             document.removeEventListener("tao_window_event", tao_window_event);
             document.removeEventListener("window_ipc_com", window_ipc_com);
-            window.removeEventListener("load", on_load);
+            //  window.removeEventListener("load", on_load);
         };
     }, []);
 
@@ -345,10 +328,6 @@ const Main = () => {
                                         height: 300,
                                         width: 250,
                                     },
-                                    // position: {
-                                    //     x: selection_data.screen_x,
-                                    //     y: selection_data.screen_y,
-                                    // },
                                     selector: "context_menu",
                                     shadow: false,
                                     transparent: true,
@@ -362,10 +341,6 @@ const Main = () => {
                                     // let data = e.detail.data;
                                     if ((e.detail.data.type = "is_loaded")) {
                                         await update_menu();
-                                        // await update_menu_position(
-                                        //     selection_data.client_x,
-                                        //     selection_data.client_y,
-                                        // );
                                         await send_selection_data(
                                             selection_data,
                                         );
@@ -382,10 +357,6 @@ const Main = () => {
                                 );
                             } else {
                                 await update_menu();
-                                // await update_menu_position(
-                                //     selection_data.client_x,
-                                //     selection_data.client_y,
-                                // );
                                 await send_selection_data(selection_data);
                                 set_menu_visibility(true);
                             }

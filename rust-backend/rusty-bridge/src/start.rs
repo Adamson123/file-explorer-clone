@@ -6,8 +6,8 @@ use tokio::sync::Mutex;
 use crate::{
     commands::{
         close_window, create_window, maximize_window, minimize_window, move_window, resize_window,
-        restore_window, send_msg_to_window_by_selector, set_decoration, set_position, set_size,
-        set_visibility,
+        restore_window, send_msg_to_window_by_selector, set_decoration, set_focus, set_position,
+        set_size, set_visibility,
     },
     commands_registry::{Command, CommandsRegistry},
     globals::Globals,
@@ -77,6 +77,7 @@ impl RustyBridgeBuilder {
             close_window(),
             send_msg_to_window_by_selector(),
             set_visibility(),
+            set_focus(),
             set_position(),
             set_size(),
         ] {

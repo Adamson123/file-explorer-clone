@@ -89,6 +89,10 @@ const set_visibility = async (visibility: boolean) => {
     return await invoke_command("set_visibility", { visibility });
 };
 
+const set_focus = async () => {
+    return await invoke_command("set_focus");
+};
+
 const set_position = async (position: { x: number; y: number }) => {
     return await invoke_command("set_position", { position });
 };
@@ -122,6 +126,7 @@ const window_commands = {
     restore_window,
     send_msg_to_window_by_selector,
     set_visibility,
+    set_focus,
     set_position,
     set_size,
 };

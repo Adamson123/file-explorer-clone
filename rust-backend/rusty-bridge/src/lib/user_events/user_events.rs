@@ -26,6 +26,7 @@ pub enum WindowEvent {
     RestoreWindow,
     DragWindow,
     CloseWindow,
+    SetFocus,
     HideDecoration(bool),
     ResizeWindow(ResizeDirection),
     SendMsgToWindowBySelector(String, Value),

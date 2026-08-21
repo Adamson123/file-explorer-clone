@@ -121,6 +121,14 @@ command_struct!(set_visibility, |a, g| {
     Ok(String::new())
 });
 
+command_struct!(set_focus, |a, g| {
+    let _ = g.event_loop_proxy.send_event(UserEvent::WindowEvent(
+        get_field_as_string(a, "window_key"),
+        WindowEvent::SetFocus,
+    ));
+    Ok(String::new())
+});
+
 command_struct!(set_position, |a, g| {
     let p = a.get("position").unwrap_or(&json!({})).to_owned();
     let position: WebviewWindowPosition = serde_json::from_value(p).map_err(|e| e.to_string())?;

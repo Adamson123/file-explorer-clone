@@ -64,6 +64,16 @@ pub fn user_events_handler(
             let _id = main_thread_states
                 .webview_windows_manager
                 .add_webview_window(&new_window_config);
+
+            // if let Ok(id) = id {
+            //     let webview_window = main_thread_states
+            //         .webview_windows_manager
+            //         .get_webview_window(&id);
+
+            //     if let Some(ww) = webview_window {
+            //         ww.window.set_focus();
+            //     }
+            // }
         }
 
         UserEvent::WindowEvent(window_key, window_event) => {
@@ -152,6 +162,15 @@ pub fn user_events_handler(
 
                 WindowEvent::SetVisibility(visibility) => {
                     webview_window.window.set_visible(*visibility);
+                    // if *visibility {
+                    //     webview_window.window.set_focus();
+                    //     webview_window.webview.focus();
+                    // }
+                }
+
+                WindowEvent::SetFocus => {
+                    webview_window.window.set_focus();
+                    //  webview_window.webview.focus();
                 }
 
                 WindowEvent::SetPosition(position) => {
