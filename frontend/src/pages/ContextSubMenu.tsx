@@ -1,6 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MenuPopUp, { type MenuOption } from "../components/MenuPopUp";
 import window_commands from "../lib/window_commands";
+import WindowAPIHandler, {
+    send_response_to_window,
+} from "../lib/window_api_handler";
 
 const menu_option_names = {
     FILE: "file",
@@ -76,6 +79,17 @@ const ContextSubMenu = () => {
     //         window.removeEventListener("load", on_load);
     //     };
     // }, []);
+    useEffect(() => {
+        WindowAPIHandler.listen_for_request("/is_focus", (e) => {
+            // console.log("From users api", e.detail);
+            // send_response_to_window(
+            //     e.detail.from.selector,
+            //     e.detail.data.request_id,
+            //     document.hasFocus(),
+            // );
+            e.res(document.hasFocus());
+        });
+    }, []);
 
     return (
         <MenuPopUp

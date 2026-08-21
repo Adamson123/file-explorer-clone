@@ -5,6 +5,7 @@ import MenuPopUp, {
 } from "../components/MenuPopUp";
 import window_commands from "../lib/window_commands";
 import { Outlet } from "react-router-dom";
+import { send_request_to_window } from "../lib/window_api_handler";
 
 const menu_option_names = {
     COPY: "copy",
@@ -184,7 +185,7 @@ const ContextMenu = () => {
                     e: React.MouseEvent<HTMLDivElement, MouseEvent>,
                 ) => {
                     try {
-                        console.log("FIRED!!!");
+                        // console.log("FIRED!!!");
 
                         const selection_data = get_selection_data(e);
                         if (!selection_data) {
@@ -223,7 +224,7 @@ const ContextMenu = () => {
             {
                 name: menu_option_names.PROPERTIES,
                 label: "Properties",
-                func: () => {},
+                func: async () => {},
             },
 
             {
@@ -318,14 +319,29 @@ const ContextMenu = () => {
                 }
             }}
             window_blur={async () => {
-                if (!do_not_hide_on_blur_ref.current)
-                    set_menu_visibility(false);
-                else {
+                const res = await send_request_to_window(
+                    "submenu",
+                    "/is_focus",
+                    {},
+                );
+                const submenu_is_focus = res.detail.data.value;
+                console.log({ submenu_is_focus });
+
+                if (!do_not_hide_on_blur_ref.current) {
+                    if (!submenu_is_focus) {
+                        set_menu_visibility(false);
+                        console.log("Submenu not active, hide");
+                    } else {
+                        // do_not_hide_on_blur_ref.current = true;
+                        set_menu_visibility(true);
+                        console.log("Submenu active, don't hide");
+                    }
+                } else {
                     //Make blur listen again
                     window_commands.set_focus();
                     do_not_hide_on_blur_ref.current = false;
                 }
-                console.log("HIDE on blur!!!");
+                //  console.log("HIDE on blur!!!");
             }}
         />
     );

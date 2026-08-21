@@ -10,6 +10,7 @@ type IPCHandlerExecutors = {
 class IPCHandler {
     static executors: Map<string, IPCHandlerExecutors> = new Map();
 
+    //TODO: Add timeout
     static addPromise(
         res: IPCHandlerExecutors["resolve"],
         rej: IPCHandlerExecutors["reject"],

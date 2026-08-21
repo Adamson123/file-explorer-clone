@@ -38,6 +38,11 @@ const webview_window_config = {
     kind: "App" as "App" | "Tool" | "Popup",
 };
 
+export type WindowIPCCom = CustomEvent<{
+    data: any;
+    from: { window_key: string; selector: string };
+}>;
+
 const create_window = async (
     args: Partial<typeof webview_window_config> & {
         window_name: string;

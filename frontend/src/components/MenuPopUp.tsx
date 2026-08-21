@@ -1,5 +1,5 @@
 import { useEffect, useRef, type HTMLAttributes, type RefObject } from "react";
-import window_commands from "../lib/window_commands";
+import window_commands, { type WindowIPCCom } from "../lib/window_commands";
 import { ChevronRight } from "lucide-react";
 import type { DirContents } from "../pages/Main";
 //import type { ReactSetStateAction } from "../type";
@@ -25,7 +25,7 @@ const MenuPopUp = (
     props: HTMLAttributes<HTMLDivElement> & {
         parent_selector: string;
         menu_options: (MenuOption | string)[];
-        window_ipc_com: (e: CustomEvent) => void;
+        window_ipc_com: (e: WindowIPCCom) => void;
         window_blur?: (e: FocusEvent) => void;
         tao_window_event: (e: CustomEvent) => void;
         do_not_hide_on_blur?: boolean;
@@ -118,11 +118,11 @@ const MenuPopUp = (
                     },
                 );
             }
-            console.log("Shoudld hide? ", !do_not_hide_on_blur_ref.current);
+            //  console.log("Shoudld hide? ", !do_not_hide_on_blur_ref.current);
             user_window_blur(e);
         };
 
-        const window_ipc_com: any = (e: CustomEvent) => {
+        const window_ipc_com: any = (e: WindowIPCCom) => {
             let data = e.detail.data;
             switch (data.type) {
                 case "visibility":
